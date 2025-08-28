@@ -1,0 +1,13 @@
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/CMakeFiles/edit_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/lib/CMakeFiles/memorytracker.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/lib/CMakeFiles/edit_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/lib/CMakeFiles/rebuild_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/CMakeFiles/MemoryProfilerGUI.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/CMakeFiles/edit_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/CMakeFiles/rebuild_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/CMakeFiles/MemoryProfilerGUI_autogen_timestamp_deps.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/CMakeFiles/MemoryProfilerGUI_autogen.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/tests/CMakeFiles/test_tracker.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/tests/CMakeFiles/edit_cache.dir
+C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/tests/CMakeFiles/rebuild_cache.dir

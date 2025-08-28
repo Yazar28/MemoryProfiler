@@ -1,0 +1,44 @@
+# --- Compilación de Visual Studio ---
+*.obj
+*.pdb
+*.idb
+*.pch
+*.ilk
+*.exe
+*.dll
+*.lib
+*.app
+*.out
+*.exp
+
+# --- Carpetas de build ---
+/out/
+/build/
+/[Cc]MakeFiles/
+/CMakeCache.txt
+/CMakeSettings.json
+
+# --- Archivos temporales ---
+*.user
+*.suo
+*.ncb
+*.sdf
+*.cache
+*.log
+
+# --- Qt / MOC / UIC generados ---
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# --- Archivos de Visual Studio ---
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.aps
+*.vspscc
+
+# --- Archivos de sistema ---
+*.DS_Store
+Thumbs.db
