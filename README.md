@@ -166,18 +166,15 @@ Las contribuciones son bienvenidas. Por favor, asegúrese de:
 1. Seguir los estándares de código existentes
 2. Probar cambios en todas las plataformas compatibles
 3. Actualizar la documentación correspondiente
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT. Vea el archivo LICENSE para más detalles.
+ecto está licenciado bajo la Licencia MIT. Vea el archivo LICENSE para más detalles.
 
 ## 🆘 Soporte
 
 Para problemas técnicos o preguntas:
 
-1. Consulte la documentación en [Wiki del Proyecto]
-2. Abra un issue en el repositorio GitHub
-3. Contacte al equipo de desarrollo
+
+1. Abra un issue en el repositorio GitHub
+2. Contacte al equipo de desarrollo
 
 ---
 
