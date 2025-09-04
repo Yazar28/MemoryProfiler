@@ -1,8 +1,0 @@
-set(__QT_DEPLOY_TARGET_memorytracker_FILE C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/lib/memorytracker.lib)
-set(__QT_DEPLOY_TARGET_memorytracker_TYPE STATIC_LIBRARY)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_FILE C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/gui/MemoryProfilerGUI.exe)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_RUNTIME_DLLS C:/Qt/6.9.2/msvc2022_64/bin/Qt6Widgetsd.dll;C:/Qt/6.9.2/msvc2022_64/bin/Qt6Guid.dll;C:/Qt/6.9.2/msvc2022_64/bin/Qt6Cored.dll)
-set(__QT_DEPLOY_TARGET_test_tracker_FILE C:/Users/Usuario/OneDrive/Desktop/TRABAJOS/Proyectos Datos II/MemoryProfiler/out/build/x64-debug/tests/test_tracker.exe)
-set(__QT_DEPLOY_TARGET_test_tracker_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_test_tracker_RUNTIME_DLLS )
