@@ -2,15 +2,22 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "windows-base",
-            "hidden": true,
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
-            "installDir": "${sourceDir}/out/install/${presetName}",
+            "name": "default",
+            "displayName": "Default Configuration",
+            "description": "Configure with default settings for current platform",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
-            },
+                "CMAKE_CXX_STANDARD": "17",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON"
+            }
+        },
+        {
+            "name": "vs2022",
+            "displayName": "Visual Studio 2022",
+            "description": "Configure for Visual Studio 2022",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build-vs2022",
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -18,44 +25,40 @@
             }
         },
         {
-            "name": "x64-debug",
-            "displayName": "x64 Debug",
-            "inherits": "windows-base",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+            "name": "xcode",
+            "displayName": "Xcode",
+            "description": "Configure for Xcode",
+            "generator": "Xcode",
+            "binaryDir": "${sourceDir}/build-xcode",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
             }
         },
         {
-            "name": "x64-release",
-            "displayName": "x64 Release",
-            "inherits": "x64-debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+            "name": "make",
+            "displayName": "Unix Makefiles",
+            "description": "Configure for Unix Makefiles",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build-make",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "configuration": "Release"
         },
         {
-            "name": "x86-debug",
-            "displayName": "x86 Debug",
-            "inherits": "windows-base",
-            "architecture": {
-                "value": "x86",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "x86-release",
-            "displayName": "x86 Release",
-            "inherits": "x86-debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
+            "name": "debug",
+            "configurePreset": "default",
+            "configuration": "Debug"
         }
     ]
 }
