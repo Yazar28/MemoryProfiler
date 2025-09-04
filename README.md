@@ -49,7 +49,7 @@
 
 ### Clonar el repositorio
 ```bash
-git clone https://github.com/tu_usuario/memoryprofiler
+git clone[ https://github.com/tu_usuario/memoryprofiler](https://github.com/Yazar28/MemoryProfiler.git)
 cd memoryprofiler
 ```
 
