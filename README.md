@@ -1,98 +1,171 @@
-<div align="center" id="top"> 
-  <img src="./.github/app.gif" alt="MemoryProfiler" />
+# MemoryProfiler
 
+<div align="center">
+  <!-- Espacio para GIF de demostración -->
+  <img src="./.github/demo.gif" alt="Demonstración del MemoryProfiler" width="600"/>
+  
   &#xa0;
-
-  <!-- <a href="https://memoryprofiler.netlify.app">Demo</a> -->
 </div>
 
-<h1 align="center">MemoryProfiler</h1>
+<h1 align="center">🧠 MemoryProfiler</h1>
 
 <p align="center">
-  <img alt="Github top language" src="https://img.shields.io/github/languages/top/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8">
-
-  <img alt="Github language count" src="https://img.shields.io/github/languages/count/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8">
-
-  <img alt="Repository size" src="https://img.shields.io/github/repo-size/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8">
-
-  <img alt="License" src="https://img.shields.io/github/license/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8">
-
-  <!-- <img alt="Github issues" src="https://img.shields.io/github/issues/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8" /> -->
-
-  <!-- <img alt="Github forks" src="https://img.shields.io/github/forks/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8" /> -->
-
-  <!-- <img alt="Github stars" src="https://img.shields.io/github/stars/{{YOUR_GITHUB_USERNAME}}/memoryprofiler?color=56BEB8" /> -->
+  <img alt="Lenguaje principal" src="https://img.shields.io/badge/C++-17-blue.svg?style=for-the-badge">
+  <img alt="Qt" src="https://img.shields.io/badge/Qt-6.2-green.svg?style=for-the-badge">
+  <img alt="CMake" src="https://img.shields.io/badge/CMake-3.21+-brightgreen.svg?style=for-the-badge">
+  <img alt="Plataformas" src="https://img.shields.io/badge/Plataformas-Windows%20|%20Linux%20|%20macOS-lightgrey.svg?style=for-the-badge">
 </p>
 
-<!-- Status -->
+## 📖 Acerca del proyecto
 
-<!-- <h4 align="center"> 
-	🚧  MemoryProfiler 🚀 Under construction...  🚧
-</h4> 
+**MemoryProfiler** es una herramienta avanzada de análisis de memoria para aplicaciones C++ que permite monitorear en tiempo real el uso de memoria, detectar memory leaks y visualizar el comportamiento de la memoria durante la ejecución de programas.
 
-<hr> -->
+## ✨ Características
 
-<p align="center">
-  <a href="#dart-about">About</a> &#xa0; | &#xa0; 
-  <a href="#sparkles-features">Features</a> &#xa0; | &#xa0;
-  <a href="#rocket-technologies">Technologies</a> &#xa0; | &#xa0;
-  <a href="#white_check_mark-requirements">Requirements</a> &#xa0; | &#xa0;
-  <a href="#checkered_flag-starting">Starting</a> &#xa0; | &#xa0;
-  <a href="#memo-license">License</a> &#xa0; | &#xa0;
-  <a href="https://github.com/{{YOUR_GITHUB_USERNAME}}" target="_blank">Author</a>
-</p>
+- 🔍 **Monitoreo en tiempo real** de asignaciones y liberaciones de memoria
+- 📊 **Interfaz gráfica intuitiva** con múltiples pestañas de análisis
+- 🚨 **Detección automática** de memory leaks y fugas de memoria
+- 📈 **Visualización gráfica** del mapa de memoria y tendencias temporales
+- 📁 **Análisis por archivo fuente** con distribución detallada
+- 🔌 **Comunicación por sockets** entre la biblioteca y la interfaz
 
-<br>
+## 🛠️ Tecnologías utilizadas
 
-## :dart: About ##
+- **C++17** - Lenguaje de programación principal
+- **Qt6** - Framework para la interfaz gráfica
+- **CMake** - Sistema de construcción multiplataforma
+- **Git** - Control de versiones
 
-Describe your project
+## 📋 Requisitos del sistema
 
-## :sparkles: Features ##
+### Requisitos mínimos
+- **Sistema operativo**: Windows 10/11, Linux (Ubuntu 18.04+), macOS (10.15+)
+- **CMake**: versión 3.21 o superior
+- **Compilador C++**: Compatible con C++17 (MSVC, GCC, Clang)
+- **Qt**: versión 6.2 o superior
+- **Memoria RAM**: 4 GB mínimo (8 GB recomendado)
 
-:heavy_check_mark: Feature 1;\
-:heavy_check_mark: Feature 2;\
-:heavy_check_mark: Feature 3;
+## 🚀 Comenzando
 
-## :rocket: Technologies ##
-
-The following tools were used in this project:
-
-- [Expo](https://expo.io/)
-- [Node.js](https://nodejs.org/en/)
-- [React](https://pt-br.reactjs.org/)
-- [React Native](https://reactnative.dev/)
-- [TypeScript](https://www.typescriptlang.org/)
-
-## :white_check_mark: Requirements ##
-
-Before starting :checkered_flag:, you need to have [Git](https://git-scm.com) and [Node](https://nodejs.org/en/) installed.
-
-## :checkered_flag: Starting ##
-
+### Clonar el repositorio
 ```bash
-# Clone this project
-$ git clone https://github.com/{{YOUR_GITHUB_USERNAME}}/memoryprofiler
-
-# Access
-$ cd memoryprofiler
-
-# Install dependencies
-$ yarn
-
-# Run the project
-$ yarn start
-
-# The server will initialize in the <http://localhost:3000>
+git clone https://github.com/tu_usuario/memoryprofiler
+cd memoryprofiler
 ```
 
-## :memo: License ##
+### Compilación (método recomendado)
+```bash
+# Configurar el proyecto
+cmake --preset=default
 
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file.
+# Compilar
+cmake --build --preset=default
+```
 
+### Compilación manual
+```bash
+# Crear directorio de construcción
+mkdir build
+cd build
 
-Made with :heart: by <a href="https://github.com/{{YOUR_GITHUB_USERNAME}}" target="_blank">{{YOUR_NAME}}</a>
+# Configurar
+cmake ..
+
+# Compilar
+cmake --build .
+```
+
+### Compilación para IDEs específicos
+```bash
+# Visual Studio 2022 (Windows)
+cmake --preset=vs2022
+
+# Xcode (macOS)
+cmake --preset=xcode
+
+# Makefiles (Linux)
+cmake --preset=make
+```
+
+## 📁 Estructura del proyecto
+
+```
+MemoryProfiler/
+├── lib/                 # Biblioteca de instrumentalización
+├── gui/                 # Interfaz gráfica Qt
+├── tests/               # Programas de prueba
+├── CMakeLists.txt       # Configuración principal de CMake
+├── CMakePresets.json    # Presets de compilación
+└── README.md           # Este archivo
+```
+
+## 🎯 Uso del MemoryProfiler
+
+### Integración en proyectos existentes
+```cpp
+#include "MemoryProfiler.h"
+
+// El profiler se activa automáticamente al incluir el header
+int main() {
+    // Tu código normal...
+    int* myArray = new int[100]; // Monitoreado automáticamente
+    // ...
+    delete[] myArray; // Registrado automáticamente
+    return 0;
+}
+```
+
+### Ejecución
+1. Compile su aplicación con la biblioteca de instrumentalización
+2. Ejecute la interfaz gráfica del MemoryProfiler
+3. Inicie su aplicación instrumentada
+4. Observe en tiempo real el comportamiento de la memoria
+
+## 📊 Funcionalidades de la interfaz
+
+### Pestaña de Vista General
+- Métricas en tiempo real: uso actual, asignaciones activas, memory leaks
+- Línea temporal: evolución del uso de memoria durante la ejecución
+- Top 3 archivos: archivos con mayor asignación de memoria
+
+### Mapa de Memoria
+- Visualización de todos los bloques de memoria asignados
+- Códigos de color para diferentes estados (activo, liberado, fugado)
+- Información detallada al pasar el cursor sobre bloques
+
+### Análisis por Archivo Fuente
+- Distribución de memoria por archivo .cpp/.h
+- Conteo de asignaciones y memoria total por archivo
+
+### Detector de Memory Leaks
+- Reporte de fugas detectadas
+- Gráficas de distribución y temporal de leaks
+- Identificación de archivos con mayor frecuencia de leaks
+
+## 🔧 Configuración avanzada
+
+### Variables de entorno opcionales
+```bash
+# Especificar ruta personalizada de Qt
+export QT_DIR=/ruta/personalizada/qt  # Linux/macOS
+set QT_DIR=C:\ruta\personalizada\qt   # Windows
+
+# Especificar tipo de construcción
+export BUILD_TYPE=Debug    # o Release
+```
+## 🤝 Contribuciones
+
+Las contribuciones son bienvenidas. Por favor, asegúrate de:
+1. Seguir los estándares de código existentes
+2. Probar cambios en todas las plataformas compatibles
+3. Actualizar la documentación correspondiente
+
+## 🆘 Soporte
+
+Para problemas técnicos o preguntas:
+1. Abre un issue en el [repositorio de GitHub](https://github.com/tu_usuario/memoryprofiler/issues)
+2. Contacta al equipo de desarrollo
 
 &#xa0;
 
-<a href="#top">Back to top</a>
+<a href="#top">Volver al inicio</a>
