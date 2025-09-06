@@ -79,3 +79,8 @@ Thumbs.db
 # ============================
 # Se recomienda versionar CMakePresets.json para compartir configuraciones de build
 # CMakePresets.json
+# Ignorar todo lo generado por builds
+out/build/
+out/build/**   # para asegurarse que todo dentro se ignore
+
+
