@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\mocs_compilation_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\mocs_compilation_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Release\ui_MainWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Debug\ui_MainWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\CMakeFiles\02d37c0c62e2cc9007e79f5f0eeb7235\autouic_(CONFIG).stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.ui" />
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Release.stamp" />
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Debug.stamp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{24087618-6930-3911-A219-1B11D81955E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E6F71EEF-C7DD-387F-9C90-F3198E8FBA74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{D3FC08B2-9339-3172-A3F6-9E348D064CF9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

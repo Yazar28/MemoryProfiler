@@ -1,0 +1,311 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{04332DEF-5B4F-3920-867C-BBF879AE8550}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>MemoryProfilerGUI</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\bin\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MemoryProfilerGUI.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MemoryProfilerGUI</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\bin\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MemoryProfilerGUI.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MemoryProfilerGUI</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Release;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Qt/6.9.2/mingw_64/include/QtCore" /external:I "C:/Qt/6.9.2/mingw_64/include" /external:I "C:/Qt/6.9.2/mingw_64/mkspecs/win32-g++" /external:I "C:/Qt/6.9.2/mingw_64/include/QtWidgets" /external:I "C:/Qt/6.9.2/mingw_64/include/QtGui"</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;MINGW_HAS_SECURE_API=1;UNICODE;_UNICODE;QT_WIDGETS_LIB;QT_GUI_LIB;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;QT_CORE_LIB;QT_NO_DEBUG;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;MINGW_HAS_SECURE_API=1;UNICODE;_UNICODE;QT_WIDGETS_LIB;QT_GUI_LIB;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Release;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;C:\Qt\6.9.2\mingw_64\include\QtCore;C:\Qt\6.9.2\mingw_64\include;C:\Qt\6.9.2\mingw_64\mkspecs\win32-g++;C:\Qt\6.9.2\mingw_64\include\QtWidgets;C:\Qt\6.9.2\mingw_64\include\QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Release;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;C:\Qt\6.9.2\mingw_64\include\QtCore;C:\Qt\6.9.2\mingw_64\include;C:\Qt\6.9.2\mingw_64\mkspecs\win32-g++;C:\Qt\6.9.2\mingw_64\include\QtWidgets;C:\Qt\6.9.2\mingw_64\include\QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target MemoryProfilerGUI</Message>
+      <Command>setlocal
+cd C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/CMakeFiles/MemoryProfilerGUI_autogen.dir/AutogenInfo.json Release
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/MemoryProfilerGUI_autogen/autouic_Release.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Qt\6.9.2\mingw_64\lib\libQt6Widgets.a;..\lib\Release\memorytracker.lib;C:\Qt\6.9.2\mingw_64\lib\libQt6Gui.a;C:\Qt\6.9.2\mingw_64\lib\libQt6Core.a;mpr.lib;userenv.lib;d3d11.lib;dxgi.lib;dxguid.lib;d3d12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/lib/Release/MemoryProfilerGUI.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/bin/Release/MemoryProfilerGUI.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Debug;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Qt/6.9.2/mingw_64/include/QtCore" /external:I "C:/Qt/6.9.2/mingw_64/include" /external:I "C:/Qt/6.9.2/mingw_64/mkspecs/win32-g++" /external:I "C:/Qt/6.9.2/mingw_64/include/QtWidgets" /external:I "C:/Qt/6.9.2/mingw_64/include/QtGui"</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;QT_CORE_LIB;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;MINGW_HAS_SECURE_API=1;UNICODE;_UNICODE;QT_WIDGETS_LIB;QT_GUI_LIB;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;QT_CORE_LIB;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;_WIN64;MINGW_HAS_SECURE_API=1;UNICODE;_UNICODE;QT_WIDGETS_LIB;QT_GUI_LIB;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Debug;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;C:\Qt\6.9.2\mingw_64\include\QtCore;C:\Qt\6.9.2\mingw_64\include;C:\Qt\6.9.2\mingw_64\mkspecs\win32-g++;C:\Qt\6.9.2\mingw_64\include\QtWidgets;C:\Qt\6.9.2\mingw_64\include\QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Debug;C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\lib;C:\Qt\6.9.2\mingw_64\include\QtCore;C:\Qt\6.9.2\mingw_64\include;C:\Qt\6.9.2\mingw_64\mkspecs\win32-g++;C:\Qt\6.9.2\mingw_64\include\QtWidgets;C:\Qt\6.9.2\mingw_64\include\QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message>Automatic MOC and UIC for target MemoryProfilerGUI</Message>
+      <Command>setlocal
+cd C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/CMakeFiles/MemoryProfilerGUI_autogen.dir/AutogenInfo.json Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/MemoryProfilerGUI_autogen/autouic_Debug.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Qt\6.9.2\mingw_64\lib\libQt6Widgets.a;..\lib\Debug\memorytracker.lib;C:\Qt\6.9.2\mingw_64\lib\libQt6Gui.a;C:\Qt\6.9.2\mingw_64\lib\libQt6Core.a;mpr.lib;userenv.lib;d3d11.lib;dxgi.lib;dxguid.lib;d3d12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/lib/Debug/MemoryProfilerGUI.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/bin/Debug/MemoryProfilerGUI.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\CMakeFiles\02d37c0c62e2cc9007e79f5f0eeb7235\autouic_(CONFIG).stamp.rule">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildInParallel>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.ui;C:\Qt\6.9.2\mingw_64\bin\uic.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Release.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.ui;C:\Qt\6.9.2\mingw_64\bin\uic.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Debug.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/gui/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler -BC:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc --check-stamp-file C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/gui/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler -BC:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc --check-stamp-file C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\mocs_compilation_Release.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\main.cpp" />
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.cpp" />
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.h" />
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\gui\MainWindow.ui">
+    </None>
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Release\ui_MainWindow.h" />
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Release.stamp">
+    </None>
+    <ClCompile Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\mocs_compilation_Debug.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\include_Debug\ui_MainWindow.h" />
+    <None Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\gui\MemoryProfilerGUI_autogen\autouic_Debug.stamp">
+    </None>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\ZERO_CHECK.vcxproj">
+      <Project>{E98E836C-C8F7-34EB-BE9B-D82FA887BC00}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\lib\memorytracker.vcxproj">
+      <Project>{A2FC8D4A-0B93-38BF-AE63-D022673A11C3}</Project>
+      <Name>memorytracker</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

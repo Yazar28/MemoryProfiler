@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/cmake_install.cmake",
+		"C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/lib/cmake_install.cmake",
+		"C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/cmake_install.cmake",
+		"C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

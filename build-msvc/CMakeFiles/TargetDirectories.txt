@@ -1,0 +1,5 @@
+C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/CMakeFiles/ALL_BUILD.dir
+C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/CMakeFiles/ZERO_CHECK.dir
+C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/lib/CMakeFiles/memorytracker.dir
+C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/gui/CMakeFiles/MemoryProfilerGUI.dir
+C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/tests/CMakeFiles/test_tracker.dir

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\shoko\OneDrive\Documents\progra\Repositorilos_GitHub\MemoryProfiler\build-msvc\CMakeFiles\0ca81fd58b6cd2a2cd9666370f650a5a\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{24087618-6930-3911-A219-1B11D81955E6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
