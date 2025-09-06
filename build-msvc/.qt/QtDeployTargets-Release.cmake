@@ -1,8 +1,0 @@
-set(__QT_DEPLOY_TARGET_memorytracker_FILE C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/lib/Release/memorytracker.lib)
-set(__QT_DEPLOY_TARGET_memorytracker_TYPE STATIC_LIBRARY)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_FILE C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/bin/Release/MemoryProfilerGUI.exe)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_MemoryProfilerGUI_RUNTIME_DLLS C:/Qt/6.9.2/mingw_64/bin/Qt6Widgets.dll;C:/Qt/6.9.2/mingw_64/bin/Qt6Gui.dll;C:/Qt/6.9.2/mingw_64/bin/Qt6Core.dll)
-set(__QT_DEPLOY_TARGET_test_tracker_FILE C:/Users/shoko/OneDrive/Documents/progra/Repositorilos_GitHub/MemoryProfiler/build-msvc/bin/Release/test_tracker.exe)
-set(__QT_DEPLOY_TARGET_test_tracker_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_test_tracker_RUNTIME_DLLS )

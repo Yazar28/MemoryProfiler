@@ -1,12 +1,27 @@
-﻿# CMakeList.txt: proyecto de CMake para MemoryProfiler, incluya el origen y defina
-# la lógica específica del proyecto aquí.
-#
+﻿# CMakeLists.txt de la librería MemoryProfiler
+cmake_minimum_required(VERSION 3.21)
 
-# Agregue un origen al ejecutable de este proyecto.
-add_executable (MemoryProfiler "MemoryProfiler.cpp" "MemoryProfiler.h")
+# Crear librería estática
+add_library(MemoryProfiler STATIC
+    src/MemoryProfiler.cpp
+    src/SocketClient.cpp
+    src/Traker.cpp
+)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET MemoryProfiler PROPERTY CXX_STANDARD 20)
+# Incluir los headers de la librería
+target_include_directories(MemoryProfiler
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Include
+)
+
+# Estándar de C++
+set_target_properties(MemoryProfiler PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+
+# Opciones específicas para MSVC
+if(MSVC)
+    target_compile_options(MemoryProfiler PRIVATE /W4 /EHsc)
 endif()
-
-# TODO: Agregue pruebas y destinos de instalación si es necesario.

@@ -1,8 +1,10 @@
 # ============================
-#   AÑADIDOS PARA TU PROYECTO
+#   Gitignore para MemoryProfiler
 # ============================
 
+# ============================
 # Carpetas de compilación
+# ============================
 build/
 build-*/
 build-msvc/
@@ -15,14 +17,27 @@ release/
 x64/
 x86/
 
-# Carpetas generadas por Visual Studio y VSCode
-.vscode/
-.vs/
+# ============================
+# Archivos generados por CMake
+# ============================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
 
-# Archivos temporales de VSCode
-*.code-workspace
+# ============================
+# Archivos binarios y librerías
+# ============================
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
 
-# Archivos intermedios de compilación
+# ============================
+# Archivos temporales
+# ============================
 *.o
 *.obj
 *.lo
@@ -31,26 +46,6 @@ x86/
 *.pdb
 *.ilk
 *.exp
-
-# Archivos binarios y librerías
-*.exe
-*.dll
-*.so
-*.dylib
-*.lib
-*.a
-
-# Archivos generados por CMake
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-
-# Configuraciones locales de CMake y VSCode
-CMakePresets.json
-CppProperties.json
-
-# Archivos temporales y de log
 *.log
 *.tmp
 *.bak
@@ -58,11 +53,29 @@ CppProperties.json
 *.cache
 *.user
 
+# ============================
+# Configuraciones de IDE
+# ============================
+.vscode/
+.vs/
+*.code-workspace
+*.suo
+
+# ============================
 # Archivos de testing / coverage
+# ============================
 *.gcda
 *.gcno
 *.gcov
 
+# ============================
 # Archivos de sistema
+# ============================
 *.DS_Store
 Thumbs.db
+
+# ============================
+# Presets de CMake versionables
+# ============================
+# Se recomienda versionar CMakePresets.json para compartir configuraciones de build
+# CMakePresets.json

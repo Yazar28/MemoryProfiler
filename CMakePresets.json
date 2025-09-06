@@ -1,93 +1,19 @@
 ﻿{
-    "version": 3,
-    "configurePresets": [
-        {
-            "name": "msvc-default",
-            "displayName": "MSVC Default",
-            "description": "Default configuration for MSVC compiler",
-            "generator": "Visual Studio 17 2022",
-            "binaryDir": "${sourceDir}/build-msvc",
-            "architecture": "x64",
-            "cacheVariables": {
-                "CMAKE_CXX_STANDARD": "17",
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_CONFIGURATION_TYPES": "Release;Debug"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
-        },
-        {
-            "name": "default",
-            "displayName": "Default Configuration",
-            "description": "Configure with default settings for current platform",
-            "generator": "Ninja Multi-Config",
-            "binaryDir": "${sourceDir}/build",
-            "cacheVariables": {
-                "CMAKE_CXX_STANDARD": "17",
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON"
-            }
-        },
-        {
-            "name": "vs2022",
-            "displayName": "Visual Studio 2022",
-            "description": "Configure for Visual Studio 2022",
-            "generator": "Visual Studio 17 2022",
-            "binaryDir": "${sourceDir}/build-vs2022",
-            "architecture": "x64",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
-        },
-        {
-            "name": "xcode",
-            "displayName": "Xcode",
-            "description": "Configure for Xcode",
-            "generator": "Xcode",
-            "binaryDir": "${sourceDir}/build-xcode",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin"
-            }
-        },
-        {
-            "name": "make",
-            "displayName": "Unix Makefiles",
-            "description": "Configure for Unix Makefiles",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build-make",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "msvc-release",
-            "configurePreset": "msvc-default",
-            "configuration": "Release"
-        },
-        {
-            "name": "msvc-debug",
-            "configurePreset": "msvc-default",
-            "configuration": "Debug"
-        },
-        {
-            "name": "default",
-            "configurePreset": "default",
-            "configuration": "Release"
-        },
-        {
-            "name": "debug",
-            "configurePreset": "default",
-            "configuration": "Debug"
-        }
-    ]
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "msvc2022-default",
+      "displayName": "MSVC 2022 Default",
+      "description": "Configuración por defecto para MSVC 2022 con C++17 y Qt6",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build-msvc",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17", 
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
+        "CMAKE_CXX_EXTENSIONS": "OFF", 
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.9.2/msvc2022_64" 
+      }
+    }
+  ]
 }
