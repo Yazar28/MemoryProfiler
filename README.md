@@ -49,7 +49,7 @@
 
 ### Clonar el repositorio
 ```bash
-git clone[ https://github.com/tu_usuario/memoryprofiler](https://github.com/Yazar28/MemoryProfiler.git)
+git clone https://github.com/Yazar28/MemoryProfiler.git
 cd memoryprofiler
 ```
 
@@ -90,13 +90,56 @@ cmake --preset=make
 ## 📁 Estructura del proyecto
 
 ```
-MemoryProfiler/
-├── lib/                 # Biblioteca de instrumentalización
-├── gui/                 # Interfaz gráfica Qt
-├── tests/               # Programas de prueba
-├── CMakeLists.txt       # Configuración principal de CMake
-├── CMakePresets.json    # Presets de compilación
-└── README.md           # Este archivo
+MEMORYPROFILER/
+├── .gitignore
+├── CMakeLists.txt
+├── CMakePresets.json
+├── CppProperties.json
+├── launch.json
+├── README.md
+│
+├── DataStructures/
+│   ├── CMakeLists.txt
+│   ├── Include/
+│   │   ├── MyDoubleLinkedList.h
+│   │   └── MySimpleLinkedList.h
+│   └── src/
+│       ├── MyDoubleLinkedList.cpp
+│       └── MySimpleLinkedList.cpp
+│
+├── gui/
+│   ├── CMakeLists.txt
+│   ├── gui.cpp
+│   ├── gui.h
+│   ├── MainWindow.cpp
+│   ├── MainWindow.h
+│   └── MemoryProfiler.ui
+│
+├── Include/
+│   ├── MyDoubleLinkedList.h
+│   └── MySimpleLinkedList.h
+│
+├── src/
+│   ├── CMakeLists.txt
+│   ├── main.cpp
+│   ├── MemoryProfiler.cpp
+│   ├── MemoryProfiler.h
+│   ├── TestEvent.h
+│   ├── Tracker.cpp
+│   └── Tracker.h
+│
+└── Test/
+    ├── CMakeLists.txt
+    ├── DataStructureTests/
+    │   ├── MyDoubleLinkedList.h
+    │   └── MySimpleLinkedList.h
+    ├── DataStructureTests.cpp
+    ├── TestApp.cpp
+    ├── TestLeaks.cpp
+    ├── TestMessage.cpp
+    ├── TestMemory.cpp
+    ├── TestUtil.cpp
+    └── Test.h
 ```
 
 ## 🎯 Uso del MemoryProfiler
@@ -153,6 +196,7 @@ set QT_DIR=C:\ruta\personalizada\qt   # Windows
 # Especificar tipo de construcción
 export BUILD_TYPE=Debug    # o Release
 ```
+
 ## 🤝 Contribuciones
 
 Las contribuciones son bienvenidas. Por favor, asegúrate de:
@@ -163,7 +207,7 @@ Las contribuciones son bienvenidas. Por favor, asegúrate de:
 ## 🆘 Soporte
 
 Para problemas técnicos o preguntas:
-1. Abre un issue en el [repositorio de GitHub](https://github.com/tu_usuario/memoryprofiler/issues)
+1. Abre un issue en el [repositorio de GitHub](https://github.com/Yazar28/MemoryProfiler/issues)
 2. Contacta al equipo de desarrollo
 
 &#xa0;
