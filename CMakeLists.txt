@@ -24,6 +24,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # Bibliotecas está
 add_subdirectory(MemoryProfiler)
 add_subdirectory(gui)
 add_subdirectory(tests)
+add_subdirectory(DataStructure)
 
 # Mensajes informativos
 message(STATUS "Qt6 encontrado en: ${Qt6_DIR}")
