@@ -1,23 +1,22 @@
-# Mínima configuración de CMake para DataStructure
+# Configuración mínima de CMake
 cmake_minimum_required(VERSION 3.10)
 project(DataStructure)
 
-# Incluir directorios de cabeceras
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Includes)
+# Configuración de compilación (opcional pero recomendado)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Archivos fuente
-set(SOURCES
-	src/MyDoubleLinkedList.cpp
-	src/MySimpleLinkedList.cpp
+# Creamos la librería como header-only
+add_library(DataStructure INTERFACE)
+
+# Indicamos dónde están los headers
+target_include_directories(DataStructure INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Includes
 )
-
-# Crear la biblioteca estática
-add_library(DataStructure STATIC ${SOURCES})
 
 # Ejecutable para pruebas unitarias
 add_executable(TestDataStructure TestDataStructure.cpp)
-target_link_libraries(TestDataStructure PRIVATE DataStructure)
 
-# Opcional: instalar la biblioteca y headers
-# install(TARGETS DataStructure DESTINATION lib)
-# install(DIRECTORY Includes/ DESTINATION include)
+# Enlazamos el ejecutable con la librería
+target_link_libraries(TestDataStructure PRIVATE DataStructure)

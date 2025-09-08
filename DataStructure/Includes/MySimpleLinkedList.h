@@ -1,6 +1,5 @@
-// Bases_de_datos.h
-#ifndef BASES_DE_DATOS_H
-#define BASES_DE_DATOS_H
+#ifndef MY_SIMPLE_LINKE_LITS // SIGNIFICA QUE SI NO ESTA DEFINIDO, LO DEFINE
+#define MY_SIMPLE_LINKE_LITS // SIGNIFICA QUE SI NO ESTA DEFINIDO, LO DEFINE
 using namespace std;
 #include <iostream>
 namespace DataStructure
