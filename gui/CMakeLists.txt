@@ -9,4 +9,5 @@ qt_add_executable(MemoryProfilerGUI
     MainWindow.ui
 )
 
-target_link_libraries(MemoryProfilerGUI PRIVATE Qt6::Widgets memorytracker)
+target_link_libraries(MemoryProfilerGUI PRIVATE Qt6::Widgets MemoryProfiler)
+

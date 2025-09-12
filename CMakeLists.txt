@@ -1,32 +1,31 @@
 cmake_minimum_required(VERSION 3.21)
-project(MemoryProfiler LANGUAGES CXX)
+project(MemoryProfilerProject LANGUAGES CXX)
 
-# Estándar de C++
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Opciones específicas de MSVC
 if(MSVC)
-    add_compile_options(/W4 /EHsc /MP /Zc:__cplusplus)  # Warnings altos, excepciones, multi-core, __cplusplus
+  add_compile_options(/W4 /EHsc /MP /Zc:__cplusplus)
 endif()
 
-# Ruta de Qt6
-set(Qt6_DIR "C:/Qt/6.9.2/msvc2022_64/lib/cmake/Qt6")  # Donde CMake encuentra los módulos de Qt
+# Activa/desactiva logs del tracker: cmake -DMT_DEBUG=ON ..
+option(MT_DEBUG "Enable MemoryTracker debug logs" OFF)
+
+# Salidas organizadas
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Qt para la GUI (ok dejarlo aquí si ya lo tenías)
+set(Qt6_DIR "C:/Qt/6.9.2/msvc2022_64/lib/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-# Directorios de salida
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)  # Ejecutables
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # Bibliotecas dinámicas
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # Bibliotecas estáticas
-
-# Subdirectorios del proyecto
 add_subdirectory(MemoryProfiler)
 add_subdirectory(gui)
 add_subdirectory(tests)
 
-# Mensajes informativos
-message(STATUS "Qt6 encontrado en: ${Qt6_DIR}")
-message(STATUS "Compilador: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-message(STATUS "Versión C++: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Archivos de build generados en: ${CMAKE_BINARY_DIR}")
+message(STATUS "Qt6: ${Qt6_DIR}")
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Build dir: ${CMAKE_BINARY_DIR}")

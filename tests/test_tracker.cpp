@@ -1,5 +1,12 @@
-#include <iostream>
+﻿#include "MemoryMacros.h"
+
 int main() {
-    std::cout << "Prueba del MemoryTracker\n";
+    force_link_memory_operators();
+
+    int* x = new int;
+    delete x;
+
+    [[maybe_unused]] int* leak = new int[10]; 
+
     return 0;
 }
