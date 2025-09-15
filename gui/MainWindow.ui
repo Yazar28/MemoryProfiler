@@ -6,14 +6,344 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>1200</width>
+    <height>800</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1200</width>
+    <height>800</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Memory Profiler</string>
   </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="overviewTab">
+       <attribute name="title">
+        <string>Vista General</string>
+       </attribute>
+       <layout class="QGridLayout" name="overviewLayout">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="metricsGroup">
+          <property name="title">
+           <string>Métricas Generales</string>
+          </property>
+          <layout class="QGridLayout" name="metricsLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="currentMemoryLabel">
+             <property name="text">
+              <string>Uso actual: 0 MB</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="activeAllocationsLabel">
+             <property name="text">
+              <string>Asignaciones activas: 0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="memoryLeaksLabel">
+             <property name="text">
+              <string>Memory leaks: 0 MB</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="maxMemoryLabel">
+             <property name="text">
+              <string>Uso máximo: 0 MB</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="QLabel" name="totalAllocationsLabel">
+             <property name="text">
+              <string>Total asignaciones: 0</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="timelineGroup">
+          <property name="title">
+           <string>Línea de Tiempo</string>
+          </property>
+          <layout class="QVBoxLayout" name="timelineLayout">
+           <item>
+            <widget class="QChartView" name="timelineChartView" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="summaryGroup">
+          <property name="title">
+           <string>Resumen - Top 3 Archivos con Mayor Asignación</string>
+          </property>
+          <layout class="QVBoxLayout" name="summaryLayout">
+           <item>
+            <widget class="QTableWidget" name="topFilesTable">
+             <property name="rowCount">
+              <number>3</number>
+             </property>
+             <property name="columnCount">
+              <number>3</number>
+             </property>
+             <attribute name="horizontalHeaderVisible">
+              <bool>true</bool>
+             </attribute>
+             <attribute name="horizontalHeaderDefaultSectionSize">
+              <number>120</number>
+             </attribute>
+             <attribute name="horizontalHeaderStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+             <row/>
+             <row/>
+             <row/>
+             <column>
+              <property name="text">
+               <string>Archivo</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Asignaciones</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Memoria (MB)</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="memoryMapTab">
+       <attribute name="title">
+        <string>Mapa de Memoria</string>
+       </attribute>
+       <layout class="QGridLayout" name="memoryMapLayout">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="memoryMapGroup">
+          <property name="title">
+           <string>Mapa de Memoria</string>
+          </property>
+          <layout class="QVBoxLayout" name="groupLayout">
+           <item>
+            <widget class="QTableWidget" name="memoryMapTable">
+             <property name="rowCount">
+              <number>5</number>
+             </property>
+             <property name="columnCount">
+              <number>5</number>
+             </property>
+             <attribute name="horizontalHeaderVisible">
+              <bool>true</bool>
+             </attribute>
+             <attribute name="horizontalHeaderDefaultSectionSize">
+              <number>120</number>
+             </attribute>
+             <attribute name="horizontalHeaderStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+             <row/>
+             <row/>
+             <row/>
+             <row/>
+             <row/>
+             <column>
+              <property name="text">
+               <string>Dirección</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Tamaño</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Tipo</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Estado</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Archivo</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="allocationByFileTab">
+       <attribute name="title">
+        <string>Asignación por Archivo</string>
+       </attribute>
+       <layout class="QGridLayout" name="allocationByFileLayout">
+        <item row="0" column="0">
+         <widget class="QSplitter" name="splitter">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <widget class="QGroupBox" name="chartGroup">
+           <property name="title">
+            <string>Asignación de Memoria por Archivo</string>
+           </property>
+           <layout class="QVBoxLayout" name="chartLayout">
+            <item>
+             <widget class="QChartView" name="allocationChartView" native="true"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QGroupBox" name="tableGroup">
+           <property name="title">
+            <string>Detalles por Archivo</string>
+           </property>
+           <layout class="QVBoxLayout" name="tableLayout">
+            <item>
+             <widget class="QTableWidget" name="allocationTable">
+              <property name="rowCount">
+               <number>5</number>
+              </property>
+              <property name="columnCount">
+               <number>3</number>
+              </property>
+              <attribute name="horizontalHeaderVisible">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="horizontalHeaderDefaultSectionSize">
+               <number>120</number>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <row/>
+              <row/>
+              <row/>
+              <row/>
+              <row/>
+              <column>
+               <property name="text">
+                <string>Archivo</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Asignaciones</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Memoria (MB)</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="memoryLeaksTab">
+       <attribute name="title">
+        <string>Memory Leaks</string>
+       </attribute>
+       <layout class="QGridLayout" name="memoryLeaksLayout">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="summaryGroup">
+          <property name="title">
+           <string>Resumen de Memory Leaks</string>
+          </property>
+          <layout class="QGridLayout" name="summaryLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="totalLeakedMemoryLabel">
+             <property name="text">
+              <string>Total memoria fugada: 0 MB</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="biggestLeakLabel">
+             <property name="text">
+              <string>Leak más grande: 0 MB (archivo.cpp:123)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="mostFrequentLeakFileLabel">
+             <property name="text">
+              <string>Archivo con más leaks: archivo.cpp</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="leakRateLabel">
+             <property name="text">
+              <string>Tasa de leaks: 0%</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="chartsGroup">
+          <property name="title">
+           <string>Gráficos de Memory Leaks</string>
+          </property>
+          <layout class="QGridLayout" name="chartsLayout">
+           <item row="0" column="0">
+            <widget class="QChartView" name="leaksByFileChartView" native="true"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QChartView" name="leaksDistributionChartView" native="true"/>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QChartView" name="leaksTimelineChartView" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>qchartview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
