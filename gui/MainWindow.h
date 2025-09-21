@@ -9,10 +9,16 @@
 #include <QTableWidget>
 #include <QSplitter>
 #include <QTabWidget>
+#include <QtNetwork/QTcpServer>  // Cambiado de QTcpSocket a QTcpServer
+#include <QtNetwork/QTcpSocket>
+#include <QHostAddress>
+#include <QMessageBox>
+#include <QString>
+#include <QByteArray>
+#include <QStackedWidget>
+#include <QList>
 
-//QT_CHARTS_USE_NAMESPACE
-
-    class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
@@ -20,14 +26,33 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void onStartServerClicked();  // Cambiado de onConnectButtonClicked
+    void onNewConnection();
+    void onClientDisconnected();
+    void onReadyRead();
 private:
-    void setupOverviewTab();
-    void setupMemoryMapTab();
-    void setupAllocationByFileTab();
-    void setupMemoryLeaksTab();
+    void setupConnectionTab();
+    void setupOverviewTab();          // Asegúrate de que esté declarada
+    void setupMemoryMapTab();         // Asegúrate de que esté declarada
+    void setupAllocationByFileTab();  // Asegúrate de que esté declarada
+    void setupMemoryLeaksTab();       // Asegúrate de que esté declarada
+    void processData(const QByteArray &data);
+    QTcpServer *tcpServer;        // Servidor TCP
+    QList<QTcpSocket*> clients;   // Lista de clientes conectados
+
+    // Connection Tab
+    QWidget *connectionTab;
+    QLineEdit *portInput;
+    QPushButton *startServerButton;
+    QLabel *serverStatusLabel;
+    QLabel *clientsConnectedLabel;
+
+    // Main tabs container
+    QStackedWidget *mainContainer;
+    QTabWidget *tabWidget;
 
     // Overview Tab
-    QTabWidget *tabWidget;
     QWidget *overviewTab;
     QGridLayout *overviewLayout;
     QLabel *currentMemoryLabel;

@@ -7,37 +7,175 @@
 #include <QTableWidget>
 #include <QLabel>
 #include <QChartView>
-#include <QRandomGenerator>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QStackedWidget>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    tcpServer = new QTcpServer(this);
+    connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
+
     // Configurar ventana principal
-    setWindowTitle("Memory Profiler");
+    setWindowTitle("Memory Profiler Server");
     setMinimumSize(1200, 800);
 
-    // Crear widget de pestañas
-    tabWidget = new QTabWidget(this);
-    setCentralWidget(tabWidget);
+    // Crear contenedor principal con pila de widgets
+    mainContainer = new QStackedWidget(this);
+    setCentralWidget(mainContainer);
 
-    // Crear las pestañas
+    // Crear la pestaña de conexión
+    setupConnectionTab();
+
+    // Crear las pestañas principales (quitamos el "void" que estaba antes de setupOverviewTab)
     setupOverviewTab();
     setupMemoryMapTab();
     setupAllocationByFileTab();
     setupMemoryLeaksTab();
 
-    // Añadir pestañas al widget
+    // Crear el widget de pestañas principales
+    tabWidget = new QTabWidget();
     tabWidget->addTab(overviewTab, "Vista General");
     tabWidget->addTab(memoryMapTab, "Mapa de Memoria");
     tabWidget->addTab(allocationByFileTab, "Asignación por Archivo");
     tabWidget->addTab(memoryLeaksTab, "Memory Leaks");
+
+    // Añadir ambos a la pila
+    mainContainer->addWidget(connectionTab);  // Índice 0
+    mainContainer->addWidget(tabWidget);      // Índice 1
+
+    // Mostrar solo la pestaña de conexión al inicio
+    mainContainer->setCurrentIndex(0);
 }
 
-MainWindow::~MainWindow() {
-    // Los objetos QObject se eliminan automáticamente por el sistema de parentesco de Qt
+MainWindow::~MainWindow()
+{
+    if (tcpServer) {
+        tcpServer->close();
+        delete tcpServer;
+    }
+
+    // Cerrar todas las conexiones de clientes
+    for (QTcpSocket *client : clients) {
+        client->close();
+        client->deleteLater();
+    }
 }
 
-void MainWindow::setupOverviewTab() {
+void MainWindow::setupConnectionTab()
+{
+    connectionTab = new QWidget();
+    QVBoxLayout *mainLayout = new QVBoxLayout(connectionTab);
+
+    QGroupBox *connectionGroup = new QGroupBox("Configuración del Servidor");
+    QVBoxLayout *groupLayout = new QVBoxLayout();
+
+    // Campo de entrada para el puerto
+    QLabel *portLabel = new QLabel("Puerto del servidor:");
+    portInput = new QLineEdit();
+    portInput->setPlaceholderText("Ej: 8080");
+    portInput->setText("8080");
+
+    // Botón para iniciar servidor
+    startServerButton = new QPushButton("Iniciar Servidor");
+    connect(startServerButton, &QPushButton::clicked, this, &MainWindow::onStartServerClicked);
+
+    // Etiquetas de estado
+    serverStatusLabel = new QLabel("Servidor detenido");
+    serverStatusLabel->setAlignment(Qt::AlignCenter);
+
+    clientsConnectedLabel = new QLabel("Clientes conectados: 0");
+    clientsConnectedLabel->setAlignment(Qt::AlignCenter);
+
+    groupLayout->addWidget(portLabel);
+    groupLayout->addWidget(portInput);
+    groupLayout->addWidget(startServerButton);
+    groupLayout->addWidget(serverStatusLabel);
+    groupLayout->addWidget(clientsConnectedLabel);
+
+    connectionGroup->setLayout(groupLayout);
+    mainLayout->addWidget(connectionGroup);
+    mainLayout->addStretch();
+}
+
+void MainWindow::onStartServerClicked()
+{
+    if (tcpServer->isListening()) {
+        // Detener el servidor
+        tcpServer->close();
+        startServerButton->setText("Iniciar Servidor");
+        serverStatusLabel->setText("Servidor detenido");
+    } else {
+        // Iniciar el servidor
+        bool ok;
+        int port = portInput->text().toInt(&ok);
+
+        if (!ok || port <= 0 || port > 65535) {
+            QMessageBox::warning(this, "Error", "Puerto no válido");
+            return;
+        }
+
+        if (tcpServer->listen(QHostAddress::Any, port)) {
+            startServerButton->setText("Detener Servidor");
+            serverStatusLabel->setText("Servidor iniciado en puerto " + QString::number(port));
+        } else {
+            QMessageBox::warning(this, "Error", "No se pudo iniciar el servidor: " + tcpServer->errorString());
+        }
+    }
+}
+
+void MainWindow::onNewConnection()
+{
+    QTcpSocket *clientSocket = tcpServer->nextPendingConnection();
+    connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onClientDisconnected);
+
+    clients.append(clientSocket);
+    clientsConnectedLabel->setText("Clientes conectados: " + QString::number(clients.size()));
+
+    // Mostrar las pestañas principales cuando se conecta el primer cliente
+    if (clients.size() == 1) {
+        mainContainer->setCurrentIndex(1);
+    }
+}
+
+void MainWindow::onClientDisconnected()
+{
+    QTcpSocket *clientSocket = qobject_cast<QTcpSocket*>(sender());
+    if (clientSocket) {
+        clients.removeOne(clientSocket);
+        clientSocket->deleteLater();
+        clientsConnectedLabel->setText("Clientes conectados: " + QString::number(clients.size()));
+
+        // Volver a la pantalla de conexión si no hay clientes
+        if (clients.isEmpty()) {
+            mainContainer->setCurrentIndex(0);
+        }
+    }
+}
+
+void MainWindow::onReadyRead()
+{
+    QTcpSocket *clientSocket = qobject_cast<QTcpSocket*>(sender());
+    if (!clientSocket) return;
+
+    QByteArray data = clientSocket->readAll();
+    processData(data);
+}
+
+void MainWindow::processData(const QByteArray &data)
+{
+    // Aquí procesas los datos recibidos del cliente
+    // Por ahora, solo mostraremos un mensaje en la barra de estado
+   // statusBar()->showMessage("Datos recibidos: " + QString::fromUtf8(data));
+
+    // Aquí deberías implementar la lógica para parsear los datos
+    // y actualizar las tablas y gráficos según la información recibida
+}
+
+void MainWindow::setupOverviewTab()
+{
     overviewTab = new QWidget();
     overviewLayout = new QGridLayout(overviewTab);
 
@@ -77,13 +215,7 @@ void MainWindow::setupOverviewTab() {
     topFilesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     topFilesTable->setRowCount(3);
 
-    // Llenar con datos de ejemplo
-    for (int i = 0; i < 3; ++i) {
-        topFilesTable->setItem(i, 0, new QTableWidgetItem("archivo" + QString::number(i+1) + ".cpp"));
-        topFilesTable->setItem(i, 1, new QTableWidgetItem("0"));
-        topFilesTable->setItem(i, 2, new QTableWidgetItem("0.0"));
-    }
-
+    // Dejar la tabla vacía (sin datos aleatorios)
     summaryLayout->addWidget(topFilesTable);
     summaryGroup->setLayout(summaryLayout);
 
@@ -96,7 +228,8 @@ void MainWindow::setupOverviewTab() {
     overviewLayout->setRowStretch(1, 3); // La gráfica ocupa más espacio
 }
 
-void MainWindow::setupMemoryMapTab() {
+void MainWindow::setupMemoryMapTab()
+{
     memoryMapTab = new QWidget();
     memoryMapLayout = new QGridLayout(memoryMapTab);
 
@@ -108,22 +241,16 @@ void MainWindow::setupMemoryMapTab() {
     memoryMapTable->setHorizontalHeaderLabels({"Dirección", "Tamaño", "Tipo", "Estado", "Archivo"});
     memoryMapTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // Añadir algunas filas de ejemplo
+    // Dejar la tabla vacía (sin datos aleatorios)
     memoryMapTable->setRowCount(5);
-    for (int i = 0; i < 5; ++i) {
-        memoryMapTable->setItem(i, 0, new QTableWidgetItem("0x" + QString::number(QRandomGenerator::global()->generate(), 16)));
-        memoryMapTable->setItem(i, 1, new QTableWidgetItem(QString::number(QRandomGenerator::global()->generate() % 1024) + " B"));
-        memoryMapTable->setItem(i, 2, new QTableWidgetItem("int"));
-        memoryMapTable->setItem(i, 3, new QTableWidgetItem("Activo"));
-        memoryMapTable->setItem(i, 4, new QTableWidgetItem("main.cpp"));
-    }
 
     groupLayout->addWidget(memoryMapTable);
     memoryMapGroup->setLayout(groupLayout);
     memoryMapLayout->addWidget(memoryMapGroup, 0, 0);
 }
 
-void MainWindow::setupAllocationByFileTab() {
+void MainWindow::setupAllocationByFileTab()
+{
     allocationByFileTab = new QWidget();
     allocationByFileLayout = new QGridLayout(allocationByFileTab);
 
@@ -143,13 +270,8 @@ void MainWindow::setupAllocationByFileTab() {
     allocationTable->setHorizontalHeaderLabels({"Archivo", "Asignaciones", "Memoria (MB)"});
     allocationTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // Datos de ejemplo
+    // Dejar la tabla vacía (sin datos aleatorios)
     allocationTable->setRowCount(5);
-    for (int i = 0; i < 5; ++i) {
-        allocationTable->setItem(i, 0, new QTableWidgetItem("archivo" + QString::number(i+1) + ".cpp"));
-        allocationTable->setItem(i, 1, new QTableWidgetItem(QString::number(QRandomGenerator::global()->generate() % 100)));
-        allocationTable->setItem(i, 2, new QTableWidgetItem(QString::number((QRandomGenerator::global()->generate() % 1000) / 10.0, 'f', 1)));
-    }
 
     tableLayout->addWidget(allocationTable);
     tableGroup->setLayout(tableLayout);
@@ -163,7 +285,8 @@ void MainWindow::setupAllocationByFileTab() {
     allocationByFileLayout->addWidget(splitter, 0, 0);
 }
 
-void MainWindow::setupMemoryLeaksTab() {
+void MainWindow::setupMemoryLeaksTab()
+{
     memoryLeaksTab = new QWidget();
     memoryLeaksLayout = new QGridLayout(memoryLeaksTab);
 
