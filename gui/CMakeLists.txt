@@ -42,6 +42,7 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
+    LisenLogic.cpp
 )
 
 # Para Qt6, usar qt_add_executable
