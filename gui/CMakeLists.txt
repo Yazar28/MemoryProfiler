@@ -4,19 +4,8 @@ project(Prueva3 VERSION 0.1 LANGUAGES CXX)
 
 # Configuración específica para MSVC
 if(MSVC)
-    # Configurar las opciones de tiempo de ejecución de MSVC
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    
-    # Deshabilitar advertencias específicas si es necesario
-    add_compile_options(/W4 /WX-)
-    
-    # Configurar estándar de C++ para MSVC
-    add_compile_options(/Zc:__cplusplus)
-    
-    # Habilitar generación de información de depuración
-    add_compile_options(/Zi)
-    
-    # Configurar opciones de enlace
+    add_compile_options(/W4 /WX- /Zc:__cplusplus /Zi)
     add_link_options(/DEBUG)
 endif()
 
@@ -42,14 +31,15 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
-    LisenLogic.cpp
+    ListenLogic.cpp      # Nuevo archivo
+    ListenLogic.h        # Nuevo archivo
 )
 
 # Para Qt6, usar qt_add_executable
 qt_add_executable(Prueva3
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
-    mainwindow.ui  # Incluir el archivo UI directamente
+    mainwindow.ui
 )
 
 target_link_libraries(Prueva3 PRIVATE
@@ -60,13 +50,11 @@ target_link_libraries(Prueva3 PRIVATE
     Qt6::Network
 )
 
-# Configurar propiedades del objetivo
 set_target_properties(Prueva3 PROPERTIES
     WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE FALSE  # Deshabilitar bundle para macOS si no es necesario
+    MACOSX_BUNDLE FALSE
 )
 
-# Para MSVC, configurar el sufijo de salida
 if(MSVC)
     set_target_properties(Prueva3 PROPERTIES
         DEBUG_POSTFIX "d"
@@ -74,11 +62,9 @@ if(MSVC)
     )
 endif()
 
-# Configuración de instalación (opcional)
 include(GNUInstallDirs)
 install(TARGETS Prueva3
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# Finalización para Qt6
 qt_finalize_executable(Prueva3)
