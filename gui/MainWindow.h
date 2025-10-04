@@ -29,6 +29,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    bool serverStarted;
 
 private slots:
     void updateGeneralMetrics(const GeneralMetrics &metrics);

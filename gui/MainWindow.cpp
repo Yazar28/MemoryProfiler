@@ -26,7 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     tcpServer = new QTcpServer(this);
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
-    hasClientEverConnected = false;
+    serverStarted = false;  // Inicializar como false
+
 
     // Configurar ventana principal
     setWindowTitle("Memory Profiler Server");
@@ -118,11 +119,23 @@ void MainWindow::onStartServerClicked()
 {
     if (tcpServer->isListening())
     {
-        // Detener el servidor
+        // Detener el servidor y limpiar clientes
         tcpServer->close();
+        for (QTcpSocket *client : clients) {
+            client->close();
+            client->deleteLater();
+        }
+        clients.clear();
+
         startServerButton->setText("Iniciar Servidor");
         serverStatusLabel->setText("Servidor detenido");
+        clientsConnectedLabel->setText("Clientes conectados: 0");
         portInput->setEnabled(true);
+
+        serverStarted = false;
+
+        // Volver a la pestaña de conexión
+        mainContainer->setCurrentIndex(0);
     }
     else
     {
@@ -140,7 +153,15 @@ void MainWindow::onStartServerClicked()
         {
             startServerButton->setText("Detener Servidor");
             serverStatusLabel->setText("Servidor iniciado en puerto " + QString::number(port));
+            clientsConnectedLabel->setText("Clientes conectados: 0");
             portInput->setEnabled(false);
+
+            serverStarted = true;
+
+            // Ir directamente a las pestañas principales
+            mainContainer->setCurrentIndex(1);
+
+            qDebug() << "✓ Servidor iniciado en puerto" << port << "- Esperando conexiones...";
         }
         else
         {
@@ -148,7 +169,6 @@ void MainWindow::onStartServerClicked()
         }
     }
 }
-
 void MainWindow::onNewConnection()
 {
     QTcpSocket *clientSocket = tcpServer->nextPendingConnection();
@@ -158,12 +178,16 @@ void MainWindow::onNewConnection()
     clients.append(clientSocket);
     clientsConnectedLabel->setText("Clientes conectados: " + QString::number(clients.size()));
 
-    // Mostrar las pestañas principales cuando se conecta el primer cliente
-    if (clients.size() == 1)
-    {
-        hasClientEverConnected = true;
+    qDebug() << "✓ Nuevo cliente conectado. Total:" << clients.size();
+    qDebug() << "  Dirección:" << clientSocket->peerAddress().toString();
+    qDebug() << "  Puerto:" << clientSocket->peerPort();
+
+    // Mostrar las pestañas principales si no estaban visibles
+    if (serverStarted && mainContainer->currentIndex() == 0) {
         mainContainer->setCurrentIndex(1);
     }
+
+    statusBar()->showMessage("Nuevo cliente conectado - Total: " + QString::number(clients.size()));
 }
 
 void MainWindow::onClientDisconnected()
@@ -175,14 +199,19 @@ void MainWindow::onClientDisconnected()
         clientSocket->deleteLater();
         clientsConnectedLabel->setText("Clientes conectados: " + QString::number(clients.size()));
 
-        // Solo volver a conexión si nunca hubo un cliente conectado
-        if (clients.isEmpty() && !hasClientEverConnected)
-        {
-            mainContainer->setCurrentIndex(0);
+        qDebug() << "✗ Cliente desconectado. Clientes restantes:" << clients.size();
+
+        // Mostrar en status bar
+        if (clients.isEmpty()) {
+            statusBar()->showMessage("Todos los clientes desconectados - Servidor sigue escuchando");
+        } else {
+            statusBar()->showMessage("Cliente desconectado - Clientes activos: " + QString::number(clients.size()));
         }
+
+        // IMPORTANTE: No volver a la pestaña de conexión
+        // El servidor sigue activo y escuchando nuevas conexiones
     }
 }
-
 void MainWindow::onReadyRead()
 {
     QTcpSocket *clientSocket = qobject_cast<QTcpSocket *>(sender());
@@ -190,9 +219,16 @@ void MainWindow::onReadyRead()
         return;
 
     QByteArray data = clientSocket->readAll();
+
+    // Opcional: Identificar de qué cliente vienen los datos
+    QString clientInfo = clientSocket->peerAddress().toString() + ":" +
+                         QString::number(clientSocket->peerPort());
+
+    qDebug() << "📨 Datos recibidos de cliente:" << clientInfo;
+    qDebug() << "Tamaño:" << data.size() << "bytes";
+
     processData(data);
 }
-
 void MainWindow::processData(const QByteArray &data)
 {
     static QByteArray buffer;
@@ -264,6 +300,10 @@ void MainWindow::processData(const QByteArray &data)
         // Reiniciar el stream con el buffer actualizado
         stream.device()->seek(0);
     }
+    statusBar()->showMessage("Datos procesados - Clientes: " +
+                             QString::number(clients.size()) +
+                             " - Última actualización: " +
+                             QDateTime::currentDateTime().toString("hh:mm:ss"));
 }
 
 void MainWindow::setupOverviewTab()
