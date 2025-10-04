@@ -36,4 +36,5 @@ target_link_libraries(TestClient
     PRIVATE
         ServerClient
         Qt6::Core
+        
 )

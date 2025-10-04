@@ -10,13 +10,17 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QStatusBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+
+    // Inicializar ListenLogic
+    //listenLogic = new ListenLogic(this);
     tcpServer = new QTcpServer(this);
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
-
+    hasClientEverConnected = false; // Inicializar en falso
     // Configurar ventana principal
     setWindowTitle("Memory Profiler Server");
     setMinimumSize(1200, 800);
@@ -146,6 +150,7 @@ void MainWindow::onNewConnection()
     // Mostrar las pestañas principales cuando se conecta el primer cliente
     if (clients.size() == 1)
     {
+        hasClientEverConnected = true; // Marcar que ha habido al menos una conexión
         mainContainer->setCurrentIndex(1);
     }
 }
@@ -159,11 +164,12 @@ void MainWindow::onClientDisconnected()
         clientSocket->deleteLater();
         clientsConnectedLabel->setText("Clientes conectados: " + QString::number(clients.size()));
 
-        // Volver a la pantalla de conexión si no hay clientes
-        if (clients.isEmpty())
+        // Solo volver a conexión si nunca hubo un cliente conectado
+        if (clients.isEmpty() && !hasClientEverConnected)
         {
             mainContainer->setCurrentIndex(0);
         }
+        // Si hasClientEverConnected es true, mantener en las pestañas principales
     }
 }
 
@@ -179,12 +185,62 @@ void MainWindow::onReadyRead()
 
 void MainWindow::processData(const QByteArray &data)
 {
-    // Aquí procesas los datos recibidos del cliente
-    // Por ahora, solo mostraremos un mensaje en la barra de estado
-    // statusBar()->showMessage("Datos recibidos: " + QString::fromUtf8(data));
+    qDebug() << "=== DATOS RECIBIDOS DEL CLIENTE ===";
+    qDebug() << "Tamaño total:" << data.size() << "bytes";
+    qDebug() << "Datos en crudo:" << data.toHex();
 
-    // Aquí deberías implementar la lógica para parsear los datos
-    // y actualizar las tablas y gráficos según la información recibida
+    // Intentar parsear el formato del cliente: [keyword_len][data_len][keyword][data]
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    quint16 keywordLen;
+    quint32 dataLen;
+
+    // Leer las longitudes
+    if (stream.readRawData(reinterpret_cast<char*>(&keywordLen), sizeof(keywordLen)) != sizeof(keywordLen)) {
+        qDebug() << "✗ Error: No se pudo leer la longitud del keyword";
+        return;
+    }
+
+    if (stream.readRawData(reinterpret_cast<char*>(&dataLen), sizeof(dataLen)) != sizeof(dataLen)) {
+        qDebug() << "✗ Error: No se pudo leer la longitud de los datos";
+        return;
+    }
+
+    qDebug() << "Longitud del keyword:" << keywordLen << "bytes";
+    qDebug() << "Longitud de los datos:" << dataLen << "bytes";
+
+    // Leer el keyword
+    QByteArray keywordBytes(keywordLen, 0);
+    if (stream.readRawData(keywordBytes.data(), keywordLen) != keywordLen) {
+        qDebug() << "✗ Error: No se pudo leer el keyword";
+        return;
+    }
+
+    QString keyword = QString::fromUtf8(keywordBytes);
+    qDebug() << "Keyword recibido:" << keyword;
+
+    // Leer los datos
+    QByteArray receivedData(dataLen, 0);
+    if (stream.readRawData(receivedData.data(), dataLen) != dataLen) {
+        qDebug() << "✗ Error: No se pudo leer los datos completos";
+        return;
+    }
+
+    qDebug() << "Datos recibidos:" << receivedData;
+    qDebug() << "Datos en hexadecimal:" << receivedData.toHex();
+
+    // Procesar según el keyword usando ListenLogic
+    if (listenLogic) {
+        listenLogic->processData(keyword, receivedData);
+    } else {
+        qDebug() << "✗ Error: ListenLogic no está inicializado";
+    }
+
+    qDebug() << "=== FIN DE DATOS RECIBIDOS ===";
+
+    // También mostrar en la barra de estado
+    statusBar()->showMessage("Datos recibidos: " + keyword + " (" + QString::number(data.size()) + " bytes)");
 }
 
 void MainWindow::setupOverviewTab()

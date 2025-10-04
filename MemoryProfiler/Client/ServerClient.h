@@ -4,6 +4,8 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QDateTime>
+#include <QString>
+
 
 class Client : public QObject
 {

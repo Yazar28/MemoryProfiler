@@ -34,6 +34,8 @@ private slots:
     void onReadyRead();
 
 private:
+    // ... otras variables existentes ...
+    bool hasClientEverConnected; // Nueva variable
     void setupConnectionTab();
     void setupOverviewTab();
     void setupMemoryMapTab();
