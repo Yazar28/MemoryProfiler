@@ -195,60 +195,75 @@ void MainWindow::onReadyRead()
 
 void MainWindow::processData(const QByteArray &data)
 {
-    qDebug() << "=== DATOS RECIBIDOS DEL CLIENTE ===";
-    qDebug() << "Tamaño total:" << data.size() << "bytes";
+    static QByteArray buffer;
+    buffer.append(data);
 
-    // Intentar parsear el formato del cliente: [keyword_len][data_len][keyword][data]
-    QDataStream stream(data);
-    stream.setByteOrder(QDataStream::BigEndian);
+    QDataStream stream(&buffer, QIODevice::ReadOnly);
+    stream.setByteOrder(QDataStream::BigEndian); // Debe coincidir con el cliente
 
-    quint16 keywordLen;
-    quint32 dataLen;
+    while (buffer.size() >= sizeof(quint16) + sizeof(quint32)) {
+        // Guardar la posición actual
+        qint64 startPos = stream.device()->pos();
 
-    // Leer las longitudes
-    if (stream.readRawData(reinterpret_cast<char*>(&keywordLen), sizeof(keywordLen)) != sizeof(keywordLen)) {
-        qDebug() << "✗ Error: No se pudo leer la longitud del keyword";
-        return;
+        quint16 keywordLen;
+        quint32 dataLen;
+
+        // Leer usando operadores >> en lugar de readRawData
+        stream >> keywordLen >> dataLen;
+
+        if (stream.status() != QDataStream::Ok) {
+            qDebug() << "✗ Error: No se pudieron leer las longitudes";
+            buffer.clear();
+            return;
+        }
+
+        qDebug() << "Longitud del keyword:" << keywordLen << "bytes";
+        qDebug() << "Longitud de los datos:" << dataLen << "bytes";
+
+        // Verificar si tenemos todos los datos necesarios
+        quint64 totalNeeded = sizeof(keywordLen) + sizeof(dataLen) + keywordLen + dataLen;
+        if (buffer.size() - startPos < totalNeeded) {
+            // No tenemos todos los datos aún, restaurar posición y esperar más
+            stream.device()->seek(startPos);
+            buffer = buffer.mid(startPos);
+            return;
+        }
+
+        // Leer el keyword
+        QByteArray keywordBytes(keywordLen, 0);
+        if (stream.readRawData(keywordBytes.data(), keywordLen) != keywordLen) {
+            qDebug() << "✗ Error: No se pudo leer el keyword";
+            buffer.clear();
+            return;
+        }
+
+        QString keyword = QString::fromUtf8(keywordBytes);
+        qDebug() << "Keyword recibido:" << keyword;
+
+        // Leer los datos
+        QByteArray receivedData(dataLen, 0);
+        if (stream.readRawData(receivedData.data(), dataLen) != dataLen) {
+            qDebug() << "✗ Error: No se pudo leer los datos completos";
+            buffer.clear();
+            return;
+        }
+
+        qDebug() << "Datos recibidos:" << receivedData.size() << "bytes";
+
+        // Procesar usando ListenLogic
+        if (listenLogic) {
+            listenLogic->processData(keyword, receivedData);
+        } else {
+            qDebug() << "✗ Error: ListenLogic no está inicializado";
+        }
+
+        // Eliminar los datos procesados del buffer
+        qint64 currentPos = stream.device()->pos();
+        buffer = buffer.mid(currentPos);
+
+        // Reiniciar el stream con el buffer actualizado
+        stream.device()->seek(0);
     }
-
-    if (stream.readRawData(reinterpret_cast<char*>(&dataLen), sizeof(dataLen)) != sizeof(dataLen)) {
-        qDebug() << "✗ Error: No se pudo leer la longitud de los datos";
-        return;
-    }
-
-    qDebug() << "Longitud del keyword:" << keywordLen << "bytes";
-    qDebug() << "Longitud de los datos:" << dataLen << "bytes";
-
-    // Leer el keyword
-    QByteArray keywordBytes(keywordLen, 0);
-    if (stream.readRawData(keywordBytes.data(), keywordLen) != keywordLen) {
-        qDebug() << "✗ Error: No se pudo leer el keyword";
-        return;
-    }
-
-    QString keyword = QString::fromUtf8(keywordBytes);
-    qDebug() << "Keyword recibido:" << keyword;
-
-    // Leer los datos
-    QByteArray receivedData(dataLen, 0);
-    if (stream.readRawData(receivedData.data(), dataLen) != dataLen) {
-        qDebug() << "✗ Error: No se pudo leer los datos completos";
-        return;
-    }
-
-    qDebug() << "Datos recibidos:" << receivedData.size() << "bytes";
-
-    // Procesar según el keyword usando ListenLogic
-    if (listenLogic) {
-        listenLogic->processData(keyword, receivedData);
-    } else {
-        qDebug() << "✗ Error: ListenLogic no está inicializado";
-    }
-
-    qDebug() << "=== FIN DE DATOS RECIBIDOS ===";
-
-    // También mostrar en la barra de estado
-    statusBar()->showMessage("Datos recibidos: " + keyword + " (" + QString::number(data.size()) + " bytes)");
 }
 
 void MainWindow::setupOverviewTab()
@@ -426,12 +441,21 @@ void MainWindow::setupMemoryLeaksTab()
 
 void MainWindow::updateGeneralMetrics(const GeneralMetrics &metrics)
 {
-    // Actualizar labels de la pestaña Overview
+    qDebug() << "=== ACTUALIZANDO INTERFAZ ===";
+    qDebug() << "Current:" << metrics.currentUsageMB;
+    qDebug() << "Active:" << metrics.activeAllocations;
+    qDebug() << "Leaks:" << metrics.memoryLeaksMB;
+    qDebug() << "Max:" << metrics.maxMemoryMB;
+    qDebug() << "Total:" << metrics.totalAllocations;
+
+    // Actualizar labels
     currentMemoryLabel->setText(QString("Uso actual: %1 MB").arg(metrics.currentUsageMB, 0, 'f', 2));
     activeAllocationsLabel->setText(QString("Asignaciones activas: %1").arg(metrics.activeAllocations));
     memoryLeaksLabel->setText(QString("Memory leaks: %1 MB").arg(metrics.memoryLeaksMB, 0, 'f', 2));
     maxMemoryLabel->setText(QString("Uso máximo: %1 MB").arg(metrics.maxMemoryMB, 0, 'f', 2));
     totalAllocationsLabel->setText(QString("Total asignaciones: %1").arg(metrics.totalAllocations));
 
-    qDebug() << "✓ UI actualizada con métricas generales";
+    // Forzar actualización de la interfaz
+    update();
+    repaint();
 }

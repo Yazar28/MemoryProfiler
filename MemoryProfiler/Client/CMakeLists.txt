@@ -9,6 +9,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Network)
 # Biblioteca del cliente
 add_library(ServerClient STATIC
     ServerClient.cpp
+    ServerClient.h
     profiler_structures.h
 )
 
@@ -28,14 +29,23 @@ set_target_properties(ServerClient PROPERTIES
     AUTOMOC ON
 )
 
-# Ejecutable de prueba específico para GENERAL_METRICS
-add_executable(TestClientGeneralMetrics
-    test_client.cpp
+# Prueba solo para GENERAL_METRICS
+add_executable(TestMetricsOnly
+    test_metrics_only.cpp
 )
 
-target_link_libraries(TestClientGeneralMetrics
+target_link_libraries(TestMetricsOnly
     PRIVATE
         ServerClient
         Qt6::Core
         Qt6::Network
 )
+
+# Configurar salida
+set_target_properties(TestMetricsOnly PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    DEBUG_POSTFIX "d"
+    RELEASE_POSTFIX ""
+)
+
+message(STATUS "✅ Configuración completada: TestMetricsOnly - Solo envía GENERAL_METRICS")

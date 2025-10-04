@@ -12,14 +12,24 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
     qDebug() << "Keyword:" << keyword;
     qDebug() << "Tamaño datos:" << data.size() << "bytes";
 
-    // MÉTRICAS GENERALES - Usando estructuras
+    // Procesar datos binarios (estructuras)
     if (keyword == "GENERAL_METRICS")
     {
         handleGeneralMetrics(data);
         return;
     }
+    else if (keyword == "TIMELINE_POINT")
+    {
+        handleTimelinePoint(data);
+        return;
+    }
+    else if (keyword == "TOP_FILE")
+    {
+        handleTopFile(data);
+        return;
+    }
 
-    // Para otros keywords, procesar como string
+    // Para otros keywords, procesar como string (formato antiguo)
     QString dataStr = QString::fromUtf8(data);
     QStringList parts = dataStr.split('|');
 
@@ -39,12 +49,7 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
     {
         handleLeakReport(parts);
     }
-    else if (keyword == "TIMELINE_POINT")
-    {
-        handleTimelinePoint(parts);
-    }
 }
-
 void ListenLogic::handleLiveUpdate(const QStringList &parts)
 {
     if (parts.size() < 2)
@@ -68,22 +73,15 @@ void ListenLogic::handleLiveUpdate(const QStringList &parts)
     }
 }
 
-void ListenLogic::handleGeneralMetrics(const QStringList &parts)
+
+QDataStream &operator>>(QDataStream &stream, GeneralMetrics &metrics)
 {
-    if (parts.size() < 5)
-        return;
-
-    quint64 totalAllocs = parts[0].toULongLong();
-    quint64 activeAllocs = parts[1].toULongLong();
-    quint64 currentMem = parts[2].toULongLong();
-    quint64 peakMem = parts[3].toULongLong();
-    quint64 leakedMem = parts[4].toULongLong();
-
-    qDebug() << "[METRICS] TotalAllocs:" << totalAllocs
-             << "ActiveAllocs:" << activeAllocs
-             << "CurrentMem:" << bytesToMB(currentMem) << "MB"
-             << "PeakMem:" << bytesToMB(peakMem) << "MB"
-             << "LeakedMem:" << bytesToMB(leakedMem) << "MB";
+    stream >> metrics.currentUsageMB
+        >> metrics.activeAllocations
+        >> metrics.memoryLeaksMB
+        >> metrics.maxMemoryMB
+        >> metrics.totalAllocations;
+    return stream;
 }
 
 void ListenLogic::handleGeneralMetrics(const QByteArray &data)
@@ -92,27 +90,55 @@ void ListenLogic::handleGeneralMetrics(const QByteArray &data)
     stream.setByteOrder(QDataStream::BigEndian);
 
     GeneralMetrics metrics;
-
-    stream >> metrics.currentUsageMB
-        >> metrics.activeAllocations
-        >> metrics.memoryLeaksMB
-        >> metrics.maxMemoryMB
-        >> metrics.totalAllocations;
+    stream >> metrics;
 
     if (stream.status() != QDataStream::Ok) {
         qDebug() << "✗ Error: No se pudo deserializar GeneralMetrics";
+        qDebug() << "Bytes recibidos:" << data.size();
+        qDebug() << "Stream status:" << stream.status();
         return;
     }
 
-    qDebug() << "✓ Métricas generales recibidas:";
-    qDebug() << "  - Uso actual:" << metrics.currentUsageMB << "MB";
-    qDebug() << "  - Asignaciones activas:" << metrics.activeAllocations;
-    qDebug() << "  - Memory leaks:" << metrics.memoryLeaksMB << "MB";
-    qDebug() << "  - Uso máximo:" << metrics.maxMemoryMB << "MB";
-    qDebug() << "  - Total asignaciones:" << metrics.totalAllocations;
+    qDebug() << "✓ Métricas deserializadas CORRECTAMENTE";
+    qDebug() << "  Current:" << metrics.currentUsageMB << "MB";
+    qDebug() << "  Active:" << metrics.activeAllocations;
+    qDebug() << "  Leaks:" << metrics.memoryLeaksMB << "MB";
+    qDebug() << "  Max:" << metrics.maxMemoryMB << "MB";
+    qDebug() << "  Total:" << metrics.totalAllocations;
 
     emit generalMetricsUpdated(metrics);
 }
+
+// Luego en ListenLogic.cpp
+void ListenLogic::handleTimelinePoint(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    TimelinePoint point;
+    stream >> point.timestamp >> point.memoryMB;
+
+    if (stream.status() == QDataStream::Ok) {
+        qDebug() << "✓ TimelinePoint recibido - Time:" << point.timestamp << "Memory:" << point.memoryMB << "MB";
+        // Aquí puedes emitir una señal para actualizar la timeline si la tienes
+    }
+}
+
+void ListenLogic::handleTopFile(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    TopFile file;
+    stream >> file.filename >> file.allocations >> file.memoryMB;
+
+    if (stream.status() == QDataStream::Ok) {
+        qDebug() << "✓ TopFile recibido - File:" << file.filename << "Allocs:" << file.allocations << "Memory:" << file.memoryMB << "MB";
+        // Aquí puedes emitir una señal para actualizar la tabla de top files
+    }
+}
+
+
 
 void ListenLogic::handleMemoryMap(const QStringList &parts)
 {
