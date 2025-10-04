@@ -9,7 +9,7 @@
 #include <QTableWidget>
 #include <QSplitter>
 #include <QTabWidget>
-#include <QtNetwork/QTcpServer>  // Cambiado de QTcpSocket a QTcpServer
+#include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
 #include <QHostAddress>
 #include <QMessageBox>
@@ -17,6 +17,7 @@
 #include <QByteArray>
 #include <QStackedWidget>
 #include <QList>
+#include "ListenLogic.h" // Incluir el nuevo header
 
 class MainWindow : public QMainWindow
 {
@@ -27,19 +28,28 @@ public:
     ~MainWindow();
 
 private slots:
-    void onStartServerClicked();  // Cambiado de onConnectButtonClicked
+    void onStartServerClicked();
     void onNewConnection();
     void onClientDisconnected();
     void onReadyRead();
+
 private:
+    // ... otras variables existentes ...
+    bool hasClientEverConnected; // Nueva variable
     void setupConnectionTab();
-    void setupOverviewTab();          // Asegúrate de que esté declarada
-    void setupMemoryMapTab();         // Asegúrate de que esté declarada
-    void setupAllocationByFileTab();  // Asegúrate de que esté declarada
-    void setupMemoryLeaksTab();       // Asegúrate de que esté declarada
+    void setupOverviewTab();
+    void setupMemoryMapTab();
+    void setupAllocationByFileTab();
+    void setupMemoryLeaksTab();
     void processData(const QByteArray &data);
-    QTcpServer *tcpServer;        // Servidor TCP
-    QList<QTcpSocket*> clients;   // Lista de clientes conectados
+    // Slots para las señales de ListenLogic (los implementaremos después)
+    void onGeneralMetricsUpdated(quint64 totalAllocs, quint64 activeAllocs,
+                                 quint64 currentMem, quint64 peakMem, quint64 leakedMem);
+    void onTimelinePointAdded(quint64 timestamp, quint64 currentMemory, quint64 activeAllocations);
+
+    QTcpServer *tcpServer;
+    QList<QTcpSocket *> clients;
+    ListenLogic *listenLogic; // Nueva instancia de ListenLogic
 
     // Connection Tab
     QWidget *connectionTab;

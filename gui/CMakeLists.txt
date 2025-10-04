@@ -1,24 +1,23 @@
-cmake_minimum_required(VERSION 3.16)
+    cmake_minimum_required(VERSION 3.16)
 
 project(Prueva3 VERSION 0.1 LANGUAGES CXX)
 
-# Configuración específica para MSVC
-if(MSVC)
-    # Configurar las opciones de tiempo de ejecución de MSVC
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    
-    # Deshabilitar advertencias específicas si es necesario
-    add_compile_options(/W4 /WX-)
-    
-    # Configurar estándar de C++ para MSVC
-    add_compile_options(/Zc:__cplusplus)
-    
-    # Habilitar generación de información de depuración
-    add_compile_options(/Zi)
-    
-    # Configurar opciones de enlace
-    add_link_options(/DEBUG)
+# Forzar uso de MSVC 2022 (Visual Studio 17)
+if(NOT MSVC)
+    message(FATAL_ERROR "❌ Este proyecto solo se puede compilar con MSVC (Visual Studio).")
 endif()
+
+# Verificar que la versión del compilador sea MSVC 2022 (19.30 - 19.49)
+if (NOT (MSVC_VERSION GREATER_EQUAL 1930 AND MSVC_VERSION LESS 1950))
+    message(FATAL_ERROR "❌ Se requiere Visual Studio 2022 (MSVC v19.3x - v19.4x). Versión detectada: ${MSVC_VERSION}")
+else()
+    message(STATUS "✅ Compilador MSVC 2022 detectado correctamente (versión: ${MSVC_VERSION})")
+endif()
+
+# Configuración específica para MSVC
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+add_compile_options(/W4 /WX- /Zc:__cplusplus /Zi)
+add_link_options(/DEBUG)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -31,25 +30,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Charts Network)
 
 # Configurar variables de salida para MSVC
-if(MSVC)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-endif()
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Todos los archivos en la misma carpeta
 set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
-    LisenLogic.cpp
+    ListenLogic.cpp
+    ListenLogic.h
 )
 
 # Para Qt6, usar qt_add_executable
 qt_add_executable(Prueva3
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
-    mainwindow.ui  # Incluir el archivo UI directamente
+    mainwindow.ui
 )
 
 target_link_libraries(Prueva3 PRIVATE
@@ -60,25 +58,16 @@ target_link_libraries(Prueva3 PRIVATE
     Qt6::Network
 )
 
-# Configurar propiedades del objetivo
 set_target_properties(Prueva3 PROPERTIES
     WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE FALSE  # Deshabilitar bundle para macOS si no es necesario
+    MACOSX_BUNDLE FALSE
+    DEBUG_POSTFIX "d"
+    RELEASE_POSTFIX ""
 )
 
-# Para MSVC, configurar el sufijo de salida
-if(MSVC)
-    set_target_properties(Prueva3 PROPERTIES
-        DEBUG_POSTFIX "d"
-        RELEASE_POSTFIX ""
-    )
-endif()
-
-# Configuración de instalación (opcional)
 include(GNUInstallDirs)
 install(TARGETS Prueva3
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# Finalización para Qt6
 qt_finalize_executable(Prueva3)
