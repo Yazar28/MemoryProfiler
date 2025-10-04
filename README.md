@@ -212,4 +212,101 @@ Para problemas técnicos o preguntas:
 
 &#xa0;
 
+
+
+
+
+
+
+# 🧩 Compilar y ejecutar módulos o tests individuales
+
+Puedes compilar y ejecutar partes específicas del proyecto (por ejemplo, un test de una estructura de datos) siguiendo estos pasos:
+
+### Ejemplo: Compilar y ejecutar solo el test de lista simple
+
+1. **Configura el proyecto (solo la primera vez o si cambias CMake):**
+
+```bash
+cmake -S . -B build
+```
+
+2. **Compila solo el ejecutable de test:**
+
+```bash
+cmake --build build --target TestDataStructure
+```
+
+3. **Ejecuta el binario generado:**
+
+```bash
+./build/bin/Debug/TestDataStructure.exe
+```
+
+(O busca el ejecutable en `build/bin/` o la carpeta que corresponda según tu configuración y sistema operativo.)
+
+---
+
+### Ejemplo: Agregar un nuevo test o ejecutable
+
+Supón que creas un archivo `TestMiEstructura.cpp` en `DataStructure/` para probar otra estructura:
+
+1. **Edita `DataStructure/CMakeLists.txt` y agrega:**
+
+```cmake
+add_executable(TestMiEstructura TestMiEstructura.cpp)
+target_link_libraries(TestMiEstructura PRIVATE DataStructure)
+```
+
+2. **Regenera los archivos de build:**
+
+```bash
+cmake -S . -B build
+```
+
+3. **Compila solo el nuevo test:**
+
+```bash
+cmake --build build --target TestMiEstructura
+```
+
+4. **Ejecuta el nuevo test:**
+
+```bash
+./build/bin/Debug/TestMiEstructura.exe
+```
+
+---
+
+### Ejemplo: Agregar un nuevo archivo fuente a la biblioteca
+
+1. Crea tu archivo, por ejemplo `src/MiNuevaEstructura.cpp`.
+2. Edita la lista de fuentes en `DataStructure/CMakeLists.txt`:
+
+```cmake
+set(SOURCES
+   src/MyDoubleLinkedList.cpp
+   src/MySimpleLinkedList.cpp
+   src/MiNuevaEstructura.cpp
+)
+```
+
+3. Regenera y recompila:
+
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+---
+
+### Notas importantes
+
+- **Siempre que cambies el `CMakeLists.txt` (agregues tests, fuentes, etc.), ejecuta `cmake -S . -B build` antes de compilar.**
+- Puedes compilar todos los ejecutables y bibliotecas con:
+  ```bash
+  cmake --build build
+  ```
+- Si tienes dudas sobre el nombre del ejecutable, revisa la carpeta `build/bin/Debug/` o el output de la compilación.
+
+Esto te permite trabajar y probar módulos o tests de forma independiente, sin recompilar todo el proyecto cada vez.
 <a href="#top">Volver al inicio</a>
