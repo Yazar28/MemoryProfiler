@@ -1,6 +1,5 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #include <QMainWindow>
 #include <QtCharts/QChartView>
 #include <QGridLayout>
@@ -21,6 +20,11 @@
 #include <QPushButton>
 #include "ListenLogic.h"
 #include "profiler_structures.h"
+#include <QLineSeries>
+#include <QValueAxis>
+
+
+
 
 class MainWindow : public QMainWindow
 {
@@ -45,6 +49,17 @@ private:
     void setupAllocationByFileTab();
     void setupMemoryLeaksTab();
     void processData(const QByteArray &data);
+    void updateTimelineChart(const TimelinePoint &point);
+
+    // Timeline Chart - AGREGAR ESTAS
+    QChart *timelineChart;
+    QLineSeries *timelineSeries;
+    QValueAxis *axisX;
+    QValueAxis *axisY;
+    QVector<TimelinePoint> timelineData;
+    qint64 startTime;
+    const int MAX_POINTS = 100;
+
 
     // Server and networking
     QTcpServer *tcpServer;

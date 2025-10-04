@@ -15,6 +15,10 @@
 #include <QDataStream>
 #include "ListenLogic.h"
 #include "profiler_structures.h"
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,6 +27,12 @@ MainWindow::MainWindow(QWidget *parent)
     listenLogic = new ListenLogic(this);
     connect(listenLogic, &ListenLogic::generalMetricsUpdated,
             this, &MainWindow::updateGeneralMetrics);
+
+    // Conectar las señales de ListenLogic
+    connect(listenLogic, &ListenLogic::generalMetricsUpdated,
+            this, &MainWindow::updateGeneralMetrics);
+    connect(listenLogic, &ListenLogic::timelinePointUpdated,  // <- AGREGAR ESTA
+            this, &MainWindow::updateTimelineChart);
 
     tcpServer = new QTcpServer(this);
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
@@ -338,13 +348,47 @@ void MainWindow::setupOverviewTab()
 
     metricsGroup->setLayout(metricsLayout);
 
-    // Línea de tiempo (área para gráfico)
-    QGroupBox *timelineGroup = new QGroupBox("Línea de Tiempo");
+    // Línea de tiempo - INICIALIZACIÓN DEL GRÁFICO
+    QGroupBox *timelineGroup = new QGroupBox("Línea de Tiempo - Uso de Memoria");
     QVBoxLayout *timelineLayout = new QVBoxLayout();
-    timelineChartView = new QChartView();
+
+    // Crear el gráfico
+    timelineChart = new QChart();
+    timelineChart->setTitle("Uso de Memoria en Tiempo Real");
+    timelineChart->setAnimationOptions(QChart::NoAnimation);
+
+    // Crear la serie de datos
+    timelineSeries = new QLineSeries();
+    timelineSeries->setName("Memoria (MB)");
+    timelineSeries->setColor(QColor(0, 120, 215));
+
+    timelineChart->addSeries(timelineSeries);
+
+    // Configurar ejes
+    axisX = new QValueAxis();
+    axisX->setTitleText("Tiempo (segundos)");
+    axisX->setLabelFormat("%.1f");
+    axisX->setRange(0, 60);
+
+    axisY = new QValueAxis();
+    axisY->setTitleText("Memoria (MB)");
+    axisY->setLabelFormat("%.1f");
+    axisY->setRange(0, 500);
+
+    timelineChart->addAxis(axisX, Qt::AlignBottom);
+    timelineChart->addAxis(axisY, Qt::AlignLeft);
+
+    timelineSeries->attachAxis(axisX);
+    timelineSeries->attachAxis(axisY);
+
+    timelineChartView = new QChartView(timelineChart);
     timelineChartView->setRenderHint(QPainter::Antialiasing);
     timelineLayout->addWidget(timelineChartView);
+
     timelineGroup->setLayout(timelineLayout);
+
+    // Inicializar tiempo de inicio
+    startTime = QDateTime::currentMSecsSinceEpoch();
 
     // Resumen (top 3 archivos)
     QGroupBox *summaryGroup = new QGroupBox("Resumen - Top 3 Archivos con Mayor Asignación");
@@ -498,4 +542,62 @@ void MainWindow::updateGeneralMetrics(const GeneralMetrics &metrics)
     // Forzar actualización de la interfaz
     update();
     repaint();
+}
+void MainWindow::updateTimelineChart(const TimelinePoint &point)
+{
+    // Agregar el nuevo punto a los datos
+    timelineData.append(point);
+
+    // Limitar el número de puntos para no sobrecargar la UI
+    if (timelineData.size() > MAX_POINTS) {
+        timelineData.removeFirst();
+    }
+
+    // Calcular tiempo relativo desde el inicio
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    qint64 elapsedSeconds = (currentTime - startTime) / 1000.0;
+
+    // Actualizar la serie de datos
+    timelineSeries->clear();
+
+    double minMemory = 0;
+    double maxMemory = 0;
+
+    if (!timelineData.isEmpty()) {
+        minMemory = timelineData.first().memoryMB;
+        maxMemory = timelineData.first().memoryMB;
+    }
+
+    for (const TimelinePoint &dataPoint : timelineData) {
+        // Calcular tiempo relativo para este punto
+        qint64 pointTime = (dataPoint.timestamp - startTime) / 1000.0;
+        timelineSeries->append(pointTime, dataPoint.memoryMB);
+
+        // Actualizar min/max
+        if (dataPoint.memoryMB < minMemory) minMemory = dataPoint.memoryMB;
+        if (dataPoint.memoryMB > maxMemory) maxMemory = dataPoint.memoryMB;
+    }
+
+    // Auto-ajustar ejes con un pequeño margen
+    if (timelineData.size() > 0) {
+        double memoryMargin = (maxMemory - minMemory) * 0.1;
+
+        axisY->setRange
+            (
+            qMax(0.0, minMemory - memoryMargin),
+            maxMemory + memoryMargin
+            );
+
+        // El eje X siempre muestra los últimos 60 segundos
+        // El eje X siempre muestra los últimos 60 segundos
+        double startRange = qMax(0.0, (double)(elapsedSeconds - 60));
+        double endRange = (double)elapsedSeconds;
+        axisX->setRange(startRange, endRange);
+    }
+
+    // Forzar actualización del gráfico
+    timelineChartView->update();
+
+    qDebug() << "📈 Timeline actualizada - Puntos:" << timelineData.size()
+             << "Memoria actual:" << point.memoryMB << "MB";
 }

@@ -109,20 +109,7 @@ void ListenLogic::handleGeneralMetrics(const QByteArray &data)
     emit generalMetricsUpdated(metrics);
 }
 
-// Luego en ListenLogic.cpp
-void ListenLogic::handleTimelinePoint(const QByteArray &data)
-{
-    QDataStream stream(data);
-    stream.setByteOrder(QDataStream::BigEndian);
 
-    TimelinePoint point;
-    stream >> point.timestamp >> point.memoryMB;
-
-    if (stream.status() == QDataStream::Ok) {
-        qDebug() << "✓ TimelinePoint recibido - Time:" << point.timestamp << "Memory:" << point.memoryMB << "MB";
-        // Aquí puedes emitir una señal para actualizar la timeline si la tienes
-    }
-}
 
 void ListenLogic::handleTopFile(const QByteArray &data)
 {
@@ -236,18 +223,20 @@ void ListenLogic::handleLeakReport(const QStringList &parts)
     }
 }
 
-void ListenLogic::handleTimelinePoint(const QStringList &parts)
+void ListenLogic::handleTimelinePoint(const QByteArray &data)
 {
-    if (parts.size() < 4)
-        return;
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
 
-    quint64 timestamp = parts[1].toULongLong();
-    quint64 currentMemory = parts[2].toULongLong();
-    quint64 activeAllocations = parts[3].toULongLong();
+    TimelinePoint point;
+    stream >> point.timestamp >> point.memoryMB;
 
-    qDebug() << "[TIMELINE] Time:" << timestamp << "ms"
-             << "Memory:" << bytesToMB(currentMemory) << "MB"
-             << "Active allocs:" << activeAllocations;
+    if (stream.status() == QDataStream::Ok) {
+        qDebug() << "✓ TimelinePoint recibido - Time:" << point.timestamp << "Memory:" << point.memoryMB << "MB";
+        emit timelinePointUpdated(point);  // <- AGREGAR ESTA LÍNEA
+    } else {
+        qDebug() << "✗ Error deserializando TimelinePoint";
+    }
 }
 
 QString ListenLogic::bytesToMB(quint64 bytes)

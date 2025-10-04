@@ -31,4 +31,5 @@ public:
 
 signals:
     void generalMetricsUpdated(const GeneralMetrics &metrics);
+    void timelinePointUpdated(const TimelinePoint &point);  // <- AGREGAR ESTA
 };
