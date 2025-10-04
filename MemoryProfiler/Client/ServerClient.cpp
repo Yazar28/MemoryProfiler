@@ -3,98 +3,99 @@
 Client::Client(QObject *parent) : QObject(parent)
 {
     socket = new QTcpSocket(this);
-    clientId = QUuid::createUuid().toString(QUuid::WithoutBraces);
 
     connect(socket, &QTcpSocket::connected, this, &Client::onConnected);
     connect(socket, &QTcpSocket::disconnected, this, &Client::onDisconnected);
     connect(socket, &QTcpSocket::errorOccurred, this, &Client::onError);
+
+    qDebug() << "Client: Cliente inicializado correctamente";
+}
+
+Client::~Client()
+{
+    disconnectFromServer();
+    delete socket;
 }
 
 bool Client::connectToServer(const QString &host, quint16 port)
 {
     if (isConnected())
     {
-        qDebug() << "Client: Ya conectado al servidor.";
+        qDebug() << "Client: Ya estaba conectado al servidor";
         return true;
     }
 
+    qDebug() << "Client: Conectando al servidor..." << host << ":" << port;
     socket->connectToHost(host, port);
-    return socket->waitForConnected(3000);
+
+    if (socket->waitForConnected(3000))
+    {
+        qDebug() << "Client: ✓ Conexión exitosa con el servidor";
+        return true;
+    }
+    else
+    {
+        qDebug() << "Client: ✗ Error: No se pudo conectar al servidor";
+        return false;
+    }
 }
 
 void Client::disconnectFromServer()
 {
-    if (socket)
+    if (socket && isConnected())
     {
+        qDebug() << "Client: Desconectando del servidor...";
         socket->disconnectFromHost();
         if (socket->state() != QAbstractSocket::UnconnectedState)
         {
             socket->waitForDisconnected(1000);
         }
+        qDebug() << "Client: ✓ Desconectado del servidor";
     }
 }
 
-void Client::send(const QString &keyword, const QByteArray &data)
+void Client::sendSerialized(const QString &keyword, const QByteArray &data)
 {
-    if (!isConnected())
-    {
-        qDebug() << "Client: No conectado, no se puede enviar:" << keyword;
-        return;
-    }
-
     QByteArray packet;
     QDataStream stream(&packet, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::BigEndian);
 
     QByteArray keywordBytes = keyword.toUtf8();
 
-    // Formato compatible con Listen_Logic: [keyword_len][data_len][keyword][data]
+    // Formato: [keyword_len][data_len][keyword][data]
     stream << quint16(keywordBytes.size());
-    stream << quint16(data.size());
+    stream << quint32(data.size());
     packet.append(keywordBytes);
     packet.append(data);
 
-    socket->write(packet);
+    qint64 bytesWritten = socket->write(packet);
     socket->flush();
 
-    qDebug() << "Client: Enviado" << keyword << "size:" << data.size();
-}
-
-void Client::sendAlloc(quint64 address, quint64 size)
-{
-    QByteArray data;
-    QDataStream stream(&data, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::BigEndian);
-    stream << address << size;
-
-    send("ALLOC", data);
-}
-
-void Client::sendFree(quint64 address)
-{
-    QByteArray data;
-    QDataStream stream(&data, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::BigEndian);
-    stream << address;
-
-    send("FREE", data);
+    if (bytesWritten == packet.size())
+    {
+        qDebug() << "Client: ✓ Datos enviados correctamente al servidor";
+    }
+    else
+    {
+        qDebug() << "Client: ✗ Error: Solo se enviaron" << bytesWritten << "de" << packet.size() << "bytes";
+    }
 }
 
 void Client::onConnected()
 {
-    qDebug() << "Client: Conectado al servidor. ID:" << clientId;
+    qDebug() << "Client: ✓ Evento - Conexión establecida con servidor";
     emit connected();
 }
 
 void Client::onDisconnected()
 {
-    qDebug() << "Client: Desconectado del servidor.";
+    qDebug() << "Client: ✓ Evento - Desconectado del servidor";
     emit disconnected();
 }
 
 void Client::onError(QAbstractSocket::SocketError error)
 {
     QString errorStr = socket->errorString();
-    qDebug() << "Client: Error de socket:" << errorStr;
+    qDebug() << "Client: ✗ Error de socket:" << errorStr;
     emit errorOccurred(errorStr);
 }
