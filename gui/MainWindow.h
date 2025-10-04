@@ -17,7 +17,10 @@
 #include <QByteArray>
 #include <QStackedWidget>
 #include <QList>
-#include "ListenLogic.h" // Incluir el nuevo header
+#include <QLineEdit>
+#include <QPushButton>
+#include "ListenLogic.h"
+#include "profiler_structures.h"
 
 class MainWindow : public QMainWindow
 {
@@ -28,28 +31,25 @@ public:
     ~MainWindow();
 
 private slots:
+    void updateGeneralMetrics(const GeneralMetrics &metrics);
     void onStartServerClicked();
     void onNewConnection();
     void onClientDisconnected();
     void onReadyRead();
 
 private:
-    // ... otras variables existentes ...
-    bool hasClientEverConnected; // Nueva variable
     void setupConnectionTab();
     void setupOverviewTab();
     void setupMemoryMapTab();
     void setupAllocationByFileTab();
     void setupMemoryLeaksTab();
     void processData(const QByteArray &data);
-    // Slots para las señales de ListenLogic (los implementaremos después)
-    void onGeneralMetricsUpdated(quint64 totalAllocs, quint64 activeAllocs,
-                                 quint64 currentMem, quint64 peakMem, quint64 leakedMem);
-    void onTimelinePointAdded(quint64 timestamp, quint64 currentMemory, quint64 activeAllocations);
 
+    // Server and networking
     QTcpServer *tcpServer;
     QList<QTcpSocket *> clients;
-    ListenLogic *listenLogic; // Nueva instancia de ListenLogic
+    bool hasClientEverConnected;
+    ListenLogic *listenLogic;
 
     // Connection Tab
     QWidget *connectionTab;

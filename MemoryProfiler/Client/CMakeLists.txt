@@ -9,6 +9,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Network)
 # Biblioteca del cliente
 add_library(ServerClient STATIC
     ServerClient.cpp
+    profiler_structures.h
 )
 
 target_include_directories(ServerClient
@@ -27,14 +28,14 @@ set_target_properties(ServerClient PROPERTIES
     AUTOMOC ON
 )
 
-# Ejecutable de prueba
-add_executable(TestClient
+# Ejecutable de prueba específico para GENERAL_METRICS
+add_executable(TestClientGeneralMetrics
     test_client.cpp
 )
 
-target_link_libraries(TestClient
+target_link_libraries(TestClientGeneralMetrics
     PRIVATE
         ServerClient
         Qt6::Core
-        
+        Qt6::Network
 )

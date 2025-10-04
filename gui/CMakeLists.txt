@@ -41,6 +41,7 @@ set(PROJECT_SOURCES
     mainwindow.h
     ListenLogic.cpp
     ListenLogic.h
+    profiler_structures.h
 )
 
 # Para Qt6, usar qt_add_executable

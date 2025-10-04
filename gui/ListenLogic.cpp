@@ -4,46 +4,42 @@
 #include <QBarSet>
 #include <QLineSeries>
 #include <QPieSeries>
+#include "profiler_structures.h"
 
 void ListenLogic::processData(const QString &keyword, const QByteArray &data)
 {
+    qDebug() << "=== PROCESANDO DATOS ===";
+    qDebug() << "Keyword:" << keyword;
+    qDebug() << "Tamaño datos:" << data.size() << "bytes";
+
+    // MÉTRICAS GENERALES - Usando estructuras
+    if (keyword == "GENERAL_METRICS")
+    {
+        handleGeneralMetrics(data);
+        return;
+    }
+
+    // Para otros keywords, procesar como string
     QString dataStr = QString::fromUtf8(data);
     QStringList parts = dataStr.split('|');
 
-    qDebug() << "Received keyword:" << keyword << "Data:" << dataStr;
-
-    // LIVE UPDATES - Alloc/Free en tiempo real
     if (keyword == "LIVE_UPDATE")
     {
         handleLiveUpdate(parts);
     }
-
-    // MÉTRICAS GENERALES - Para la pestaña de vista general
-    if (keyword == "GENERAL_METRICS")
-    {
-        handleGeneralMetrics(parts);
-    }
-
-    // MAPA DE MEMORIA - Para la pestaña de mapa de memoria
-    if (keyword == "MEMORY_MAP")
+    else if (keyword == "MEMORY_MAP")
     {
         handleMemoryMap(parts);
     }
-
-    // ASIGNACIONES POR ARCHIVO - Para la pestaña de archivos fuente
-    if (keyword == "FILE_ALLOCATIONS")
+    else if (keyword == "FILE_ALLOCATIONS")
     {
         handleFileAllocations(parts);
     }
-
-    // REPORTE DE LEAKS - Para la pestaña de memory leaks
-    if (keyword == "LEAK_REPORT")
+    else if (keyword == "LEAK_REPORT")
     {
         handleLeakReport(parts);
     }
-
-    // LÍNEA DE TIEMPO - Para el gráfico temporal
-    if (keyword == "TIMELINE_POINT")
+    else if (keyword == "TIMELINE_POINT")
     {
         handleTimelinePoint(parts);
     }
@@ -64,17 +60,11 @@ void ListenLogic::handleLiveUpdate(const QStringList &parts)
 
         qDebug() << "[LIVE] ALLOC addr:" << formatAddress(addr)
                  << "size:" << size << "file:" << file << "line:" << line << "type:" << type;
-
-        // Aquí emitir señal para actualizar la interfaz
-        // emit allocReceived(addr, size, file, line, type);
     }
     if (parts[0] == "FREE" && parts.size() >= 2)
     {
         quint64 addr = parts[1].toULongLong();
         qDebug() << "[LIVE] FREE addr:" << formatAddress(addr);
-
-        // Aquí emitir señal para actualizar la interfaz
-        // emit freeReceived(addr);
     }
 }
 
@@ -94,9 +84,34 @@ void ListenLogic::handleGeneralMetrics(const QStringList &parts)
              << "CurrentMem:" << bytesToMB(currentMem) << "MB"
              << "PeakMem:" << bytesToMB(peakMem) << "MB"
              << "LeakedMem:" << bytesToMB(leakedMem) << "MB";
+}
 
-    // Aquí emitir señal para actualizar la pestaña de vista general
-    // emit generalMetricsUpdated(totalAllocs, activeAllocs, currentMem, peakMem, leakedMem);
+void ListenLogic::handleGeneralMetrics(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    GeneralMetrics metrics;
+
+    stream >> metrics.currentUsageMB
+        >> metrics.activeAllocations
+        >> metrics.memoryLeaksMB
+        >> metrics.maxMemoryMB
+        >> metrics.totalAllocations;
+
+    if (stream.status() != QDataStream::Ok) {
+        qDebug() << "✗ Error: No se pudo deserializar GeneralMetrics";
+        return;
+    }
+
+    qDebug() << "✓ Métricas generales recibidas:";
+    qDebug() << "  - Uso actual:" << metrics.currentUsageMB << "MB";
+    qDebug() << "  - Asignaciones activas:" << metrics.activeAllocations;
+    qDebug() << "  - Memory leaks:" << metrics.memoryLeaksMB << "MB";
+    qDebug() << "  - Uso máximo:" << metrics.maxMemoryMB << "MB";
+    qDebug() << "  - Total asignaciones:" << metrics.totalAllocations;
+
+    emit generalMetricsUpdated(metrics);
 }
 
 void ListenLogic::handleMemoryMap(const QStringList &parts)
@@ -106,9 +121,6 @@ void ListenLogic::handleMemoryMap(const QStringList &parts)
 
     int blockCount = parts[1].toInt();
     qDebug() << "[MEM_MAP] Starting with" << blockCount << "blocks";
-
-    // Aquí procesaríamos cada bloque y actualizaríamos la tabla del mapa de memoria
-    // emit memoryMapCleared();
 
     int index = 2;
     for (int i = 0; i < blockCount && index + 5 <= parts.size(); i++)
@@ -123,8 +135,6 @@ void ListenLogic::handleMemoryMap(const QStringList &parts)
 
             qDebug() << "[BLOCK] addr:" << formatAddress(addr)
                      << "size:" << size << "type:" << type << "file:" << file << "line:" << line;
-
-            // emit memoryBlockAdded(addr, size, type, file, line);
             index += 6;
         }
     }
@@ -137,9 +147,6 @@ void ListenLogic::handleFileAllocations(const QStringList &parts)
 
     int fileCount = parts[1].toInt();
     qDebug() << "[FILE_SUMMARY]" << fileCount << "files";
-
-    // Aquí procesaríamos los archivos para la pestaña de asignación por archivo
-    // emit fileSummaryCleared();
 
     int index = 2;
     for (int i = 0; i < fileCount && index + 5 <= parts.size(); i++)
@@ -155,8 +162,6 @@ void ListenLogic::handleFileAllocations(const QStringList &parts)
             qDebug() << "[FILE] name:" << filename
                      << "allocs:" << allocCount << "totalMem:" << bytesToMB(totalMemory) << "MB"
                      << "leaks:" << leakCount << "leakedMem:" << bytesToMB(leakedMemory) << "MB";
-
-            // emit fileSummaryAdded(filename, allocCount, totalMemory, leakCount, leakedMemory);
             index += 6;
         }
     }
@@ -179,10 +184,6 @@ void ListenLogic::handleLeakReport(const QStringList &parts)
              << "Biggest leak:" << bytesToMB(biggestLeakSize) << "MB in" << biggestLeakFile
              << "File with most leaks:" << mostFrequentLeakFile << "count:" << mostFrequentLeakCount;
 
-    // Aquí procesaríamos los leaks detallados para la pestaña de memory leaks
-    // emit leakReportUpdated(totalLeaks, totalLeakedMemory, biggestLeakSize, biggestLeakFile,
-    //                       mostFrequentLeakFile, mostFrequentLeakCount);
-
     if (parts.size() > 7 && parts[7] == "LEAKS_START")
     {
         int leakCount = parts[8].toInt();
@@ -203,8 +204,6 @@ void ListenLogic::handleLeakReport(const QStringList &parts)
                 qDebug() << "[LEAK] addr:" << formatAddress(addr)
                          << "size:" << size << "file:" << file << "line:" << line
                          << "type:" << type << "timestamp:" << timestamp;
-
-                // emit leakDetailAdded(addr, size, file, line, type, timestamp);
                 index += 7;
             }
         }
@@ -223,9 +222,6 @@ void ListenLogic::handleTimelinePoint(const QStringList &parts)
     qDebug() << "[TIMELINE] Time:" << timestamp << "ms"
              << "Memory:" << bytesToMB(currentMemory) << "MB"
              << "Active allocs:" << activeAllocations;
-
-    // Aquí emitir señal para actualizar la línea de tiempo
-    // emit timelinePointAdded(timestamp, currentMemory, activeAllocations);
 }
 
 QString ListenLogic::bytesToMB(quint64 bytes)

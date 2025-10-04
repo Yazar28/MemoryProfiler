@@ -11,16 +11,23 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QStatusBar>
+#include <QMessageBox>
+#include <QDataStream>
+#include "ListenLogic.h"
+#include "profiler_structures.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-
     // Inicializar ListenLogic
-    //listenLogic = new ListenLogic(this);
+    listenLogic = new ListenLogic(this);
+    connect(listenLogic, &ListenLogic::generalMetricsUpdated,
+            this, &MainWindow::updateGeneralMetrics);
+
     tcpServer = new QTcpServer(this);
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
-    hasClientEverConnected = false; // Inicializar en falso
+    hasClientEverConnected = false;
+
     // Configurar ventana principal
     setWindowTitle("Memory Profiler Server");
     setMinimumSize(1200, 800);
@@ -32,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Crear la pestaña de conexión
     setupConnectionTab();
 
-    // Crear las pestañas principales (quitamos el "void" que estaba antes de setupOverviewTab)
+    // Crear las pestañas principales
     setupOverviewTab();
     setupMemoryMapTab();
     setupAllocationByFileTab();
@@ -90,9 +97,11 @@ void MainWindow::setupConnectionTab()
     // Etiquetas de estado
     serverStatusLabel = new QLabel("Servidor detenido");
     serverStatusLabel->setAlignment(Qt::AlignCenter);
+    serverStatusLabel->setTextInteractionFlags(Qt::NoTextInteraction);
 
     clientsConnectedLabel = new QLabel("Clientes conectados: 0");
     clientsConnectedLabel->setAlignment(Qt::AlignCenter);
+    clientsConnectedLabel->setTextInteractionFlags(Qt::NoTextInteraction);
 
     groupLayout->addWidget(portLabel);
     groupLayout->addWidget(portInput);
@@ -113,6 +122,7 @@ void MainWindow::onStartServerClicked()
         tcpServer->close();
         startServerButton->setText("Iniciar Servidor");
         serverStatusLabel->setText("Servidor detenido");
+        portInput->setEnabled(true);
     }
     else
     {
@@ -130,6 +140,7 @@ void MainWindow::onStartServerClicked()
         {
             startServerButton->setText("Detener Servidor");
             serverStatusLabel->setText("Servidor iniciado en puerto " + QString::number(port));
+            portInput->setEnabled(false);
         }
         else
         {
@@ -150,7 +161,7 @@ void MainWindow::onNewConnection()
     // Mostrar las pestañas principales cuando se conecta el primer cliente
     if (clients.size() == 1)
     {
-        hasClientEverConnected = true; // Marcar que ha habido al menos una conexión
+        hasClientEverConnected = true;
         mainContainer->setCurrentIndex(1);
     }
 }
@@ -169,7 +180,6 @@ void MainWindow::onClientDisconnected()
         {
             mainContainer->setCurrentIndex(0);
         }
-        // Si hasClientEverConnected es true, mantener en las pestañas principales
     }
 }
 
@@ -187,7 +197,6 @@ void MainWindow::processData(const QByteArray &data)
 {
     qDebug() << "=== DATOS RECIBIDOS DEL CLIENTE ===";
     qDebug() << "Tamaño total:" << data.size() << "bytes";
-    qDebug() << "Datos en crudo:" << data.toHex();
 
     // Intentar parsear el formato del cliente: [keyword_len][data_len][keyword][data]
     QDataStream stream(data);
@@ -227,8 +236,7 @@ void MainWindow::processData(const QByteArray &data)
         return;
     }
 
-    qDebug() << "Datos recibidos:" << receivedData;
-    qDebug() << "Datos en hexadecimal:" << receivedData.toHex();
+    qDebug() << "Datos recibidos:" << receivedData.size() << "bytes";
 
     // Procesar según el keyword usando ListenLogic
     if (listenLogic) {
@@ -253,10 +261,19 @@ void MainWindow::setupOverviewTab()
     QGridLayout *metricsLayout = new QGridLayout();
 
     currentMemoryLabel = new QLabel("Uso actual: 0 MB");
+    currentMemoryLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     activeAllocationsLabel = new QLabel("Asignaciones activas: 0");
+    activeAllocationsLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     memoryLeaksLabel = new QLabel("Memory leaks: 0 MB");
+    memoryLeaksLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     maxMemoryLabel = new QLabel("Uso máximo: 0 MB");
+    maxMemoryLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     totalAllocationsLabel = new QLabel("Total asignaciones: 0");
+    totalAllocationsLabel->setTextInteractionFlags(Qt::NoTextInteraction);
 
     metricsLayout->addWidget(currentMemoryLabel, 0, 0);
     metricsLayout->addWidget(activeAllocationsLabel, 0, 1);
@@ -283,8 +300,8 @@ void MainWindow::setupOverviewTab()
     topFilesTable->setHorizontalHeaderLabels({"Archivo", "Asignaciones", "Memoria (MB)"});
     topFilesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     topFilesTable->setRowCount(3);
+    topFilesTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    // Dejar la tabla vacía (sin datos aleatorios)
     summaryLayout->addWidget(topFilesTable);
     summaryGroup->setLayout(summaryLayout);
 
@@ -294,7 +311,7 @@ void MainWindow::setupOverviewTab()
     overviewLayout->addWidget(summaryGroup, 2, 0);
 
     // Configurar proporciones
-    overviewLayout->setRowStretch(1, 3); // La gráfica ocupa más espacio
+    overviewLayout->setRowStretch(1, 3);
 }
 
 void MainWindow::setupMemoryMapTab()
@@ -309,9 +326,8 @@ void MainWindow::setupMemoryMapTab()
     memoryMapTable->setColumnCount(5);
     memoryMapTable->setHorizontalHeaderLabels({"Dirección", "Tamaño", "Tipo", "Estado", "Archivo"});
     memoryMapTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    // Dejar la tabla vacía (sin datos aleatorios)
-    memoryMapTable->setRowCount(5);
+    memoryMapTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    memoryMapTable->setRowCount(0);
 
     groupLayout->addWidget(memoryMapTable);
     memoryMapGroup->setLayout(groupLayout);
@@ -338,9 +354,8 @@ void MainWindow::setupAllocationByFileTab()
     allocationTable->setColumnCount(3);
     allocationTable->setHorizontalHeaderLabels({"Archivo", "Asignaciones", "Memoria (MB)"});
     allocationTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    // Dejar la tabla vacía (sin datos aleatorios)
-    allocationTable->setRowCount(5);
+    allocationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    allocationTable->setRowCount(0);
 
     tableLayout->addWidget(allocationTable);
     tableGroup->setLayout(tableLayout);
@@ -364,9 +379,16 @@ void MainWindow::setupMemoryLeaksTab()
     QGridLayout *summaryLayout = new QGridLayout();
 
     totalLeakedMemoryLabel = new QLabel("Total memoria fugada: 0 MB");
+    totalLeakedMemoryLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     biggestLeakLabel = new QLabel("Leak más grande: 0 MB (archivo.cpp:123)");
+    biggestLeakLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     mostFrequentLeakFileLabel = new QLabel("Archivo con más leaks: archivo.cpp");
+    mostFrequentLeakFileLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+
     leakRateLabel = new QLabel("Tasa de leaks: 0%");
+    leakRateLabel->setTextInteractionFlags(Qt::NoTextInteraction);
 
     summaryLayout->addWidget(totalLeakedMemoryLabel, 0, 0);
     summaryLayout->addWidget(biggestLeakLabel, 0, 1);
@@ -399,5 +421,17 @@ void MainWindow::setupMemoryLeaksTab()
     memoryLeaksLayout->addWidget(chartsGroup, 1, 0);
 
     // Configurar proporciones
-    memoryLeaksLayout->setRowStretch(1, 3); // Los gráficos ocupan más espacio
+    memoryLeaksLayout->setRowStretch(1, 3);
+}
+
+void MainWindow::updateGeneralMetrics(const GeneralMetrics &metrics)
+{
+    // Actualizar labels de la pestaña Overview
+    currentMemoryLabel->setText(QString("Uso actual: %1 MB").arg(metrics.currentUsageMB, 0, 'f', 2));
+    activeAllocationsLabel->setText(QString("Asignaciones activas: %1").arg(metrics.activeAllocations));
+    memoryLeaksLabel->setText(QString("Memory leaks: %1 MB").arg(metrics.memoryLeaksMB, 0, 'f', 2));
+    maxMemoryLabel->setText(QString("Uso máximo: %1 MB").arg(metrics.maxMemoryMB, 0, 'f', 2));
+    totalAllocationsLabel->setText(QString("Total asignaciones: %1").arg(metrics.totalAllocations));
+
+    qDebug() << "✓ UI actualizada con métricas generales";
 }
