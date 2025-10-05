@@ -30,7 +30,8 @@ Q_OBJECT                                                     // macro necesaria 
                                                              // espacio publico de la clase
     public : explicit MainWindow(QWidget *parent = nullptr); // constructor de la clase MainWindow
     ~MainWindow();                                           // destructor de la clase MainWindow
-    bool serverStarted;                                      // variable para saber si el servidor esta iniciado
+    bool serverStarted;
+    // variable para saber si el servidor esta iniciado
     // espacio privado los slots de la clase
 private slots:
     void updateGeneralMetrics(const GeneralMetrics &metrics);
@@ -48,6 +49,7 @@ private:
     void processData(const QByteArray &data);             // procesa los datos recibidos
     void updateTimelineChart(const TimelinePoint &point); // actualiza el grafico de la linea de tiempo
     // Timeline Chart - AGREGAR ESTAS
+
     QChart *timelineChart;               // grafico de la linea de tiempo
     QLineSeries *timelineSeries;         //  serie de la linea de tiempo
     QValueAxis *axisX;                   // eje x de la linea de tiempo
@@ -95,6 +97,7 @@ private:
     QLabel *biggestLeakLabel;               // label para mostrar la mayor fuga
     QLabel *mostFrequentLeakFileabel;       // label para mostrar el archivo con mas fugas
     QLabel *leakRateLabel;                  // label para mostrar la tasa de fugas
+    QLabel *mostFrequentLeakFileLabel;      // label para mostrar la tasa de fugas
     QChartView *leaksByFileChartView;       // vista del grafico de fugas por archivo
     QChartView *leaksDistributionChartView; // vista del grafico de distribucion de fugas
     QChartView *leaksTimelineChartView;     // vista del grafico de la linea de tiempo de fugas
