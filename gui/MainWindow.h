@@ -35,10 +35,12 @@ Q_OBJECT                                                     // macro necesaria 
     // espacio privado los slots de la clase
 private slots:
     void updateGeneralMetrics(const GeneralMetrics &metrics);
-    void onStartServerClicked(); // slot para manejar el click en el boton de iniciar servidor
-    void onNewConnection();      // slot para manejar una nueva conexion
-    void onClientDisconnected(); // slot para manejar la desconexion de un cliente
-    void onReadyRead();
+    void onStartServerClicked();                          // slot para manejar el click en el boton de iniciar servidor
+    void onNewConnection();                               // slot para manejar una nueva conexion
+    void onClientDisconnected();                          // slot para manejar la desconexion de un cliente
+    void onReadyRead();                                   // slot para manejar la lectura de datos entrantes
+    void updateTopFile(const QVector<TopFile> &topFiles); // slot para actualizar la tabla de archivos principales
+
     // parte privada de la clase
 private:
     void setupConnectionTab();                            // configura la pestaña de conexion

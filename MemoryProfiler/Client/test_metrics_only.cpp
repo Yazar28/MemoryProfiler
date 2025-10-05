@@ -12,8 +12,13 @@
 #include <QThread>
 #include <QDebug>
 #include <QRandomGenerator>
+#include <QHash>
+#include <QVector>
+#include <QString>
+#include <algorithm>
 #include "ServerClient.h"
 #include "profiler_structures.h"
+
 // Sobrecarga del operador << para GeneralMetrics
 QDataStream &operator<<(QDataStream &stream, const GeneralMetrics &metrics)
 {
@@ -25,12 +30,30 @@ QDataStream &operator<<(QDataStream &stream, const GeneralMetrics &metrics)
            << metrics.totalAllocations; // representa el número total de asignaciones realizadas(serialisado)
     return stream;                      // retornar el flujo modificado (stream)
 }
+
 // Sobrecarga del operador << para TimelinePoint
 QDataStream &operator<<(QDataStream &stream, const TimelinePoint &point) // Sobrecarga del operador << para TimelinePoint( prueba de serialización)
 {
     stream << point.timestamp << point.memoryMB; // Serializar los campos de TimelinePoint
     return stream;
 }
+
+// Sobrecarga del operador << para TopFile
+QDataStream &operator<<(QDataStream &stream, const TopFile &topFile)
+{
+    stream << topFile.filename << topFile.allocations << topFile.memoryMB;
+    return stream;
+}
+
+// Sobrecarga del operador << para QVector<TopFile>
+QDataStream &operator<<(QDataStream &stream, const QVector<TopFile> &topFiles)
+{
+    stream << quint32(topFiles.size());
+    for (const TopFile &topFile : topFiles)
+        stream << topFile;
+    return stream;
+}
+
 int main(int argc, char *argv[]) // Función principal(prueba general)
 {
     QCoreApplication app(argc, argv); // Crear la aplicación Qt(para enviar algo a qt tiene que haber una aplicación qt)
@@ -50,11 +73,49 @@ int main(int argc, char *argv[]) // Función principal(prueba general)
     }
     // Esperar para asegurar conexión
     QThread::msleep(200); // representa un hilo que duerme por 200 milisegundos(tiempo estamdar para conexiones locales)
+    
     // Prueba completa: Enviar datos de GeneralMetrics y TimelinePoint con diferentes patrones
-    qDebug() << "\n=== INICIANDO PRUEBA COMPLETA (GENERAL_METRICS + TIMELINE) ===";
+    qDebug() << "\n=== INICIANDO PRUEBA COMPLETA (GENERAL_METRICS + TIMELINE + TOP_FILES) ===";
+    
     // Variables para simular diferentes patrones de uso de memoria
     int testCount = 0;         // representa el contador de pruebas
     double baseMemory = 100.0; // representa la memoria base inicial en MB
+    
+    // Lista de archivos para simular el top files
+    QVector<QString> allFiles = {
+        "main.cpp",
+        "renderer.cpp", 
+        "physics_engine.cpp",
+        "network_manager.cpp",
+        "asset_loader.cpp",
+        "ui_manager.cpp",
+        "audio_system.cpp",
+        "shader_compiler.cpp"
+    };
+    
+    // Estado inicial de los archivos (asignaciones base)
+    QHash<QString, quint64> fileAllocations;
+    QHash<QString, double> fileMemory;
+
+    // Inicializar con valores base
+    fileAllocations["main.cpp"] = 1500;
+    fileAllocations["renderer.cpp"] = 4500;
+    fileAllocations["physics_engine.cpp"] = 3200;
+    fileAllocations["network_manager.cpp"] = 2800;
+    fileAllocations["asset_loader.cpp"] = 5100;
+    fileAllocations["ui_manager.cpp"] = 1900;
+    fileAllocations["audio_system.cpp"] = 1200;
+    fileAllocations["shader_compiler.cpp"] = 800;
+
+    fileMemory["main.cpp"] = 45.5;
+    fileMemory["renderer.cpp"] = 128.7;
+    fileMemory["physics_engine.cpp"] = 89.3;
+    fileMemory["network_manager.cpp"] = 67.8;
+    fileMemory["asset_loader.cpp"] = 156.2;
+    fileMemory["ui_manager.cpp"] = 52.1;
+    fileMemory["audio_system.cpp"] = 38.4;
+    fileMemory["shader_compiler.cpp"] = 25.6;
+
     // Timer para enviar datos cada segundo
     QTimer *timer = new QTimer(&app); // Crear un timer asociado a la aplicación
     /// Conectar la señal de timeout del timer (timer es un cronometro) a una lambda(lambda es una función anónima)
@@ -65,6 +126,7 @@ int main(int argc, char *argv[]) // Función principal(prueba general)
                      {
             testCount++; // Incrementar contador de pruebas
             qDebug() << "\n--- Enviando datos #" << testCount << "---"; // Mensaje de inicio de envío
+            
             // === ENVIAR GENERAL_METRICS ===//
             GeneralMetrics metrics; //representa las métricas generales
             metrics.currentUsageMB = baseMemory + (QRandomGenerator::global()->generate() % 50);// asignar uso de memoria actual con algo de aleatoriedad
@@ -72,17 +134,21 @@ int main(int argc, char *argv[]) // Función principal(prueba general)
             metrics.memoryLeaksMB = 2.0 + (QRandomGenerator::global()->generate() % 15);// asignar memoria perdida con algo de aleatoriedad
             metrics.maxMemoryMB = 150.0 + (QRandomGenerator::global()->generate() % 100);// asignar uso máximo de memoria con algo de aleatoriedad
             metrics.totalAllocations = 30000 + (QRandomGenerator::global()->generate() % 20000);// asignar número total de asignaciones con algo de aleatoriedad
+            
             // Enviar los datos al servidor usando el cliente
             client.send("GENERAL_METRICS", metrics);
+            
             // Mensaje de éxito con detalles
             qDebug() << "Enviado GENERAL_METRICS - Current:" << metrics.currentUsageMB << "MB" //representa el uso de memoria actual en MB
                     << "Active:" << metrics.activeAllocations // representa el número de asignaciones activas
                     << "Leaks:" << metrics.memoryLeaksMB << "MB" // representa la memoria total perdida en MB
                     << "Max:" << metrics.maxMemoryMB << "MB" //representa el uso máximo de memoria registrado en MB
                     << "Total:" << metrics.totalAllocations; // representa el número total de asignaciones realizadas
+
             // === ENVIAR TIMELINE_POINT ===
             TimelinePoint timelinePoint; // representa un punto en la línea de tiempo
             timelinePoint.timestamp = QDateTime::currentMSecsSinceEpoch(); // asignar la marca de tiempo actual
+            
             // Simular diferentes patrones de uso de memoria a lo largo del tiempo
             if (testCount <= 10)  // caso en la fase 1 cuando el contador de pruebas es menor o igual a 10
             {
@@ -119,11 +185,60 @@ int main(int argc, char *argv[]) // Función principal(prueba general)
             }
 
             client.send("TIMELINE_POINT", timelinePoint); // Enviar el punto de la línea de tiempo al servidor
+            
             // Mensaje de éxito con detalles
             qDebug() << "Enviado TIMELINE_POINT - Time:" << timelinePoint.timestamp //representa la marca de tiempo en milisegundos desde epoch
                     << "Memory:" << timelinePoint.memoryMB << "MB"; // representa el uso de memoria en MB en este punto de tiempo
+
+            // === ENVIAR TOP_FILES ===
+            // Simular cambios dinámicos en el top de archivos
+            // Cada 10 segundos (testCount múltiplo de 10), cambiar significativamente las asignaciones
+            if (testCount % 10 == 0) {
+                // Cambio significativo: aumentar mucho las asignaciones de algunos archivos
+                QString boostedFile = allFiles[QRandomGenerator::global()->generate() % allFiles.size()];
+                fileAllocations[boostedFile] += 2000 + (QRandomGenerator::global()->generate() % 3000);
+                fileMemory[boostedFile] += 50.0 + (QRandomGenerator::global()->generate() % 100);
+                qDebug() << "💥 BOOST: " << boostedFile << "incrementado significativamente";
+            }
+            
+            // Incremento normal en cada iteración (más pequeño)
+            for (const QString &filename : allFiles) {
+                fileAllocations[filename] += 10 + (QRandomGenerator::global()->generate() % 50);
+                fileMemory[filename] += 0.1 + (QRandomGenerator::global()->generate() % 100) * 0.01;
+            }
+            
+            // Crear vector de todos los archivos para ordenar
+            QVector<TopFile> allTopFiles;
+            for (const QString &filename : allFiles) {
+                TopFile topFile;
+                topFile.filename = filename;
+                topFile.allocations = fileAllocations[filename];
+                topFile.memoryMB = fileMemory[filename];
+                allTopFiles.append(topFile);
+            }
+            
+            // Ordenar por número de asignaciones (descendente) y tomar top 3
+            std::sort(allTopFiles.begin(), allTopFiles.end(), 
+                     [](const TopFile &a, const TopFile &b) { 
+                         return a.allocations > b.allocations; 
+                     });
+            
+            QVector<TopFile> topFiles;
+            for (int i = 0; i < 3 && i < allTopFiles.size(); ++i) {
+                topFiles.append(allTopFiles[i]);
+            }
+            
+            client.send("TOP_FILES", topFiles);
+            
+            // Mensaje de éxito con detalles
+            qDebug() << "Enviado TOP_FILES - Top 3 archivos:";
+            for (const TopFile &file : topFiles) {
+                qDebug() << "  - " << file.filename << "| Allocs:" << file.allocations << "| Memory:" << QString::number(file.memoryMB, 'f', 2) << "MB";
+            }
+
             // Actualizar memoria base para siguiente iteración
             baseMemory = timelinePoint.memoryMB * 0.1 + baseMemory * 0.9;//representa una media móvil para suavizar cambios bruscos
+            
             // Detener después de 80 envíos (prueba extensa)
             if (testCount >= 80)  // caso si el contador de pruebas es mayor o igual a 80
             {

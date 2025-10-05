@@ -22,15 +22,19 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // Inicializar ListenLogic
+    // Inicializar ListenLogic y sus slots de actualización
     listenLogic = new ListenLogic(this);
     connect(listenLogic, &ListenLogic::generalMetricsUpdated,
             this, &MainWindow::updateGeneralMetrics);
     // Conectar las señales de ListenLogic
     connect(listenLogic, &ListenLogic::generalMetricsUpdated,
             this, &MainWindow::updateGeneralMetrics);
-    connect(listenLogic, &ListenLogic::timelinePointUpdated, // <- AGREGAR ESTA
+    // Conectar la señal para actualizar el timeline
+    connect(listenLogic, &ListenLogic::timelinePointUpdated,
             this, &MainWindow::updateTimelineChart);
+    // Conectar la señal para actualizar los archivos principales
+    connect(listenLogic, &ListenLogic::topFilesUpdated,
+            this, &MainWindow::updateTopFile);
     // Configurar servidor TCP
     tcpServer = new QTcpServer(this);                                                   // Crear instancia del servidor TCP
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection); // Conectar la señal de nueva conexión
@@ -570,4 +574,28 @@ void MainWindow::updateTimelineChart(const TimelinePoint &point)
     // Mostrar en consola
     qDebug() << "📈 Timeline actualizada - Puntos:" << timelineData.size()
              << "Memoria actual:" << point.memoryMB << "MB";
+}
+// Actualiza los archivos que mas asignaciones tuvieron en la pestaña de vista general
+void MainWindow::updateTopFile(const QVector<TopFile> &topFiles)
+{
+    // Limpiar la tabla
+    topFilesTable->setRowCount(0);
+
+    // Llenar con los top files (máximo 3)
+    int row = 0;
+    for (const TopFile &topFile : topFiles) {
+        if (row >= 3) break; // Solo mostramos 3
+
+        topFilesTable->insertRow(row);
+        topFilesTable->setItem(row, 0, new QTableWidgetItem(topFile.filename));
+        topFilesTable->setItem(row, 1, new QTableWidgetItem(QString::number(topFile.allocations)));
+        topFilesTable->setItem(row, 2, new QTableWidgetItem(QString::number(topFile.memoryMB, 'f', 2)));
+        row++;
+    }
+
+    // Forzar actualización
+    topFilesTable->update();
+    repaint();
+    
+    qDebug() << "Top Files actualizado - Filas:" << row;
 }

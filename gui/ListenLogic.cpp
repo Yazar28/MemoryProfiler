@@ -23,9 +23,14 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
         handleTimelinePoint(data);
         return;
     }
-    else if (keyword == "TOP_FILE") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de Top Files
+    else if (keyword == "TOP_FILES")
     {
         handleTopFile(data);
+        return;
+    }
+    else
+    {
+        qDebug() << "✗ Keyword desconocido para datos binarios:" << keyword;
         return;
     }
 
@@ -37,17 +42,21 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
     {
         handleLiveUpdate(parts);
     }
-    else if (keyword == "MEMORY_MAP") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de Memory Map
+    if (keyword == "MEMORY_MAP") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de Memory Map
     {
         handleMemoryMap(parts);
     }
-    else if (keyword == "FILE_ALLOCATIONS") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de File Allocations
+    if (keyword == "FILE_ALLOCATIONS") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de File Allocations
     {
         handleFileAllocations(parts);
     }
-    else if (keyword == "LEAK_REPORT") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de Leak Report
+    if (keyword == "LEAK_REPORT") // llamam al metodo que deserializa y emite la señal para actualizar la UI en la parte de Leak Report
     {
         handleLeakReport(parts);
+    }
+    else
+    {
+        qDebug() << "✗ Keyword desconocido para datos string:" << keyword;
     }
 }
 // Maneja actualizaciones en vivo (formato Qstring)
@@ -107,18 +116,30 @@ void ListenLogic::handleGeneralMetrics(const QByteArray &data)
     emit generalMetricsUpdated(metrics); // Emite la señal para actualizar la UI
 }
 // Sobrecarga del operador >> para deserializar TopFile
-void ListenLogic::handleTopFile(const QByteArray &data) // Sobrecarga del operador >> para deserializar TopFile
+void ListenLogic::handleTopFile(const QByteArray &data)
 {
     QDataStream stream(data);
-    stream.setByteOrder(QDataStream::BigEndian); // Asegura el orden de bytes correcto
+    stream.setByteOrder(QDataStream::BigEndian);
 
-    TopFile file;
-    stream >> file.filename >> file.allocations >> file.memoryMB; // Deserializa los campos
+    QVector<TopFile> topFiles;
+    quint32 size;
+    stream >> size;
 
-    if (stream.status() == QDataStream::Ok) // Verifica si la deserialización fue exitosa
+    for (quint32 i = 0; i < size; ++i)
     {
-        qDebug() << "✓ TopFile recibido - File:" << file.filename << "Allocs:" << file.allocations << "Memory:" << file.memoryMB << "MB";
-        // Aquí puedes emitir una señal para actualizar la tabla de top files
+        TopFile file;
+        stream >> file.filename >> file.allocations >> file.memoryMB;
+        topFiles.append(file);
+    }
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✓ TopFiles recibido - Archivos:" << topFiles.size();
+        emit topFilesUpdated(topFiles);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando TopFiles";
     }
 }
 // Maneja el mapa de memoria (formato QString)
