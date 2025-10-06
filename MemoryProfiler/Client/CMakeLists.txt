@@ -4,15 +4,22 @@ project(MemoryProfiler)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Encontrar Qt6
 find_package(Qt6 REQUIRED COMPONENTS Core Network)
 
-# Biblioteca del cliente
+# Configurar directorios de salida
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Biblioteca del cliente (ServerClient)
 add_library(ServerClient STATIC
     ServerClient.cpp
     ServerClient.h
     profiler_structures.h
 )
 
+# Configurar propiedades para la biblioteca
 target_include_directories(ServerClient
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -24,28 +31,38 @@ target_link_libraries(ServerClient
         Qt6::Network
 )
 
-# Habilitar MOC automáticamente
+# Habilitar MOC automáticamente para la biblioteca
 set_target_properties(ServerClient PROPERTIES
     AUTOMOC ON
 )
 
-# Prueba solo para GENERAL_METRICS
-add_executable(TestMetricsOnly
-    test_metrics_only.cpp
+# Ejecutable de prueba completo
+add_executable(TestMemoryProfiler
+    test_complete_profiler.cpp
 )
 
-target_link_libraries(TestMetricsOnly
+# Configurar propiedades para el ejecutable
+target_include_directories(TestMemoryProfiler
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(TestMemoryProfiler
     PRIVATE
         ServerClient
         Qt6::Core
         Qt6::Network
 )
 
-# Configurar salida
-set_target_properties(TestMetricsOnly PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+# Habilitar MOC automáticamente para el ejecutable
+set_target_properties(TestMemoryProfiler PROPERTIES
+    AUTOMOC ON
+    WIN32_EXECUTABLE FALSE
     DEBUG_POSTFIX "d"
     RELEASE_POSTFIX ""
 )
 
-message(STATUS "✅ Configuración completada: TestMetricsOnly - Solo envía GENERAL_METRICS")
+# Mensaje de confirmación
+message(STATUS "✅ TestMemoryProfiler configurado - Prueba completa del sistema")
+message(STATUS "   Bibliotecas Qt6 encontradas: Core, Network")
+message(STATUS "   Directorio de salida: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")

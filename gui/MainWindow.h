@@ -35,25 +35,29 @@ Q_OBJECT                                                     // macro necesaria 
     // espacio privado los slots de la clase
 private slots:
     void updateGeneralMetrics(const GeneralMetrics &metrics);
-    void onStartServerClicked();                          // slot para manejar el click en el boton de iniciar servidor
-    void onNewConnection();                               // slot para manejar una nueva conexion
-    void onClientDisconnected();                          // slot para manejar la desconexion de un cliente
-    void onReadyRead();                                   // slot para manejar la lectura de datos entrantes
-    void updateTopFile(const QVector<TopFile> &topFiles); // slot para actualizar la tabla de archivos principales
-
+    void onStartServerClicked();                                                   // slot para manejar el click en el boton de iniciar servidor
+    void onNewConnection();                                                        // slot para manejar una nueva conexion
+    void onClientDisconnected();                                                   // slot para manejar la desconexion de un cliente
+    void onReadyRead();                                                            // slot para manejar la lectura de datos entrantes
+    void updateTopFile(const QVector<TopFile> &topFiles);                          // slot para actualizar la tabla de archivos principales
+    void updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks); // slot para actualizar el mapa de memoria
+    void updateMemoryStats(const MemoryMapTypes::MemoryStats &stats);              // slot para actualizar las estadisticas de memoria
+    void updateTimelineChart(const TimelinePoint &point);                          // slot para actualizar el grafico de la linea de tiempo
     // parte privada de la clase
 private:
-    void setupConnectionTab();                            // configura la pestaña de conexion
-    void setupOverviewTab();                              // configura la pestaña de overview
-    void setupMemoryMapTab();                             // configura la pestaña de memory map
-    void setupAllocationByFileTab();                      // configura la pestaña de allocation by file
-    void setupMemoryLeaksTab();                           // configura la pestaña de memory leaks
-    void processData(const QByteArray &data);             // procesa los datos recibidos
-    void updateTimelineChart(const TimelinePoint &point); // actualiza el grafico de la linea de tiempo
-    // Timeline Chart - AGREGAR ESTAS
-
+    void setupConnectionTab();                // configura la pestaña de conexion
+    void setupOverviewTab();                  // configura la pestaña de overview
+    void setupMemoryMapTab();                 // configura la pestaña de memory map
+    void setupAllocationByFileTab();          // configura la pestaña de allocation by file
+    void setupMemoryLeaksTab();               // configura la pestaña de memory leaks
+    void processData(const QByteArray &data); // procesa los datos recibidos
+    // actualiza el grafico de la linea de tiempo
+    QString formatMemorySize(quint64 bytes);
+    void colorTableRow(int row, const QString &state); // colorea una fila de la tabla segun el estado
+    void setupMemoryMapTableStyle();                   // configura el estilo de la tabla de mapa de memoria
+    // Timeline Chart
     QChart *timelineChart;               // grafico de la linea de tiempo
-    QLineSeries *timelineSeries;         //  serie de la linea de tiempo
+    QLineSeries *timelineSeries;         // serie de la linea de tiempo
     QValueAxis *axisX;                   // eje x de la linea de tiempo
     QValueAxis *axisY;                   // eje y de la linea de tiempo
     QVector<TimelinePoint> timelineData; // datos de la linea de tiempo

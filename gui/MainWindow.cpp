@@ -22,19 +22,23 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // Inicializar ListenLogic y sus slots de actualización
+    // instancia de ListenLogic
     listenLogic = new ListenLogic(this);
-    connect(listenLogic, &ListenLogic::generalMetricsUpdated,
-            this, &MainWindow::updateGeneralMetrics);
-    // Conectar las señales de ListenLogic
-    connect(listenLogic, &ListenLogic::generalMetricsUpdated,
-            this, &MainWindow::updateGeneralMetrics);
-    // Conectar la señal para actualizar el timeline
-    connect(listenLogic, &ListenLogic::timelinePointUpdated,
-            this, &MainWindow::updateTimelineChart);
-    // Conectar la señal para actualizar los archivos principales
-    connect(listenLogic, &ListenLogic::topFilesUpdated,
-            this, &MainWindow::updateTopFile);
+
+    // Mantener todas las conexiones...
+    connect(listenLogic, &ListenLogic::generalMetricsUpdated, this, &MainWindow::updateGeneralMetrics);
+    connect(listenLogic, &ListenLogic::timelinePointUpdated, this, &MainWindow::updateTimelineChart);
+    connect(listenLogic, &ListenLogic::topFilesUpdated, this, &MainWindow::updateTopFile);
+    connect(listenLogic, &ListenLogic::basicMemoryMapUpdated, this, &MainWindow::updateMemoryMap);
+    connect(listenLogic, &ListenLogic::memoryStatsUpdated, this, &MainWindow::updateMemoryStats);
+
+    // INICIALIZAR PUNTEROS DE GRÁFICOS
+    timelineChart = nullptr;
+    timelineSeries = nullptr;
+    axisX = nullptr;
+    axisY = nullptr;
+    startTime = QDateTime::currentMSecsSinceEpoch();
+
     // Configurar servidor TCP
     tcpServer = new QTcpServer(this);                                                   // Crear instancia del servidor TCP
     connect(tcpServer, &QTcpServer::newConnection, this, &MainWindow::onNewConnection); // Conectar la señal de nueva conexión
@@ -70,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent)
     mainContainer->setCurrentIndex(0); // Mostrar la pestaña de conexión al inicio
 }
 // Destructor de la clase MainWindow
-// Cierra el servidor y las conexiones de los clientes
+
 MainWindow::~MainWindow()
 {
     if (tcpServer)
@@ -84,6 +88,71 @@ MainWindow::~MainWindow()
     {
         client->close();
         client->deleteLater();
+    }
+}
+void MainWindow::processData(const QByteArray &data)
+{
+    static QByteArray buffer;
+    buffer.append(data);
+
+    while (!buffer.isEmpty())
+    {
+        QDataStream stream(buffer);
+        stream.setByteOrder(QDataStream::BigEndian);
+
+        // Verificar si tenemos suficiente data para leer longitudes
+        if (buffer.size() < static_cast<int>(sizeof(quint16) + sizeof(quint32)))
+        {
+            return; // Esperar más datos
+        }
+
+        // Leer longitudes SIN avanzar el puntero del stream
+        quint16 keywordLen;
+        quint32 dataLen;
+
+        QByteArray temp = buffer;
+        QDataStream tempStream(temp);
+        tempStream.setByteOrder(QDataStream::BigEndian);
+        tempStream >> keywordLen >> dataLen;
+
+        // Calcular tamaño total del mensaje
+        quint64 totalNeeded = sizeof(keywordLen) + sizeof(dataLen) + keywordLen + dataLen;
+
+        if (buffer.size() < totalNeeded)
+        {
+            return; // Mensaje incompleto
+        }
+
+        // Ahora leer del buffer real
+        stream >> keywordLen >> dataLen;
+
+        // Leer keyword
+        QByteArray keywordBytes(keywordLen, 0);
+        if (stream.readRawData(keywordBytes.data(), keywordLen) != keywordLen)
+        {
+            qDebug() << "✗ Error leyendo keyword";
+            buffer.clear();
+            return;
+        }
+        QString keyword = QString::fromUtf8(keywordBytes);
+
+        // Leer datos
+        QByteArray receivedData(dataLen, 0);
+        if (stream.readRawData(receivedData.data(), dataLen) != dataLen)
+        {
+            qDebug() << "✗ Error leyendo datos";
+            buffer.clear();
+            return;
+        }
+
+        // Procesar con ListenLogic
+        if (listenLogic)
+        {
+            listenLogic->processData(keyword, receivedData);
+        }
+
+        // Remover mensaje procesado del buffer
+        buffer = buffer.mid(totalNeeded);
     }
 }
 // Configura la pestaña de conexión
@@ -240,85 +309,6 @@ void MainWindow::onReadyRead()
     // Procesar los datos recibidos
     processData(data);
 }
-// Procesa los datos recibidos, maneja el buffer y llama a ListenLogic
-void MainWindow::processData(const QByteArray &data)
-{ // Manejo del buffer para datos parciales
-    static QByteArray buffer;
-    buffer.append(data);
-    // Usar QDataStream para facilitar la lectura de datos binarios
-    QDataStream stream(&buffer, QIODevice::ReadOnly);
-    stream.setByteOrder(QDataStream::BigEndian); // Debe coincidir con el cliente
-    // bucle para procesar múltiples mensajes en el buffer
-    while (buffer.size() >= sizeof(quint16) + sizeof(quint32))
-    {
-        // Guardar la posición actual
-        qint64 startPos = stream.device()->pos();
-        // Leer las longitudes del keyword y los datos
-        quint16 keywordLen;
-        quint32 dataLen;
-        // Leer usando operadores >> en lugar de readRawData
-        stream >> keywordLen >> dataLen;
-        if (stream.status() != QDataStream::Ok) // caso "Error al leer"
-        {
-            qDebug() << "✗ Error: No se pudieron leer las longitudes";
-            buffer.clear();
-            return;
-        }
-        // Mostrar las longitudes leídas
-        qDebug() << "Longitud del keyword:" << keywordLen << "bytes";
-        qDebug() << "Longitud de los datos:" << dataLen << "bytes";
-        // Verificar si tenemos todos los datos necesarios
-        quint64 totalNeeded = sizeof(keywordLen) + sizeof(dataLen) + keywordLen + dataLen;
-        if (buffer.size() - startPos < totalNeeded) // caso "Datos incompletos"
-        {
-            // No tenemos todos los datos aún, restaurar posición y esperar más
-            stream.device()->seek(startPos);
-            buffer = buffer.mid(startPos);
-            return;
-        }
-        // Leer el keyword
-        QByteArray keywordBytes(keywordLen, 0);
-        if (stream.readRawData(keywordBytes.data(), keywordLen) != keywordLen) // caso "Error al leer keyword"
-        {
-            qDebug() << "✗ Error: No se pudo leer el keyword";
-            buffer.clear();
-            return;
-        }
-        // Convertir a QString
-        QString keyword = QString::fromUtf8(keywordBytes);
-        qDebug() << "Keyword recibido:" << keyword;
-        // Leer los datos
-        QByteArray receivedData(dataLen, 0);
-        if (stream.readRawData(receivedData.data(), dataLen) != dataLen) // caso "Error al leer datos"
-        {
-            qDebug() << "✗ Error: No se pudo leer los datos completos";
-            buffer.clear();
-            return;
-        }
-        // Mostrar tamaño de los datos recibidos
-        qDebug() << "Datos recibidos:" << receivedData.size() << "bytes";
-        // Procesar usando ListenLogic
-        if (listenLogic) // caso "ListenLogic no inicializado"
-        {
-            listenLogic->processData(keyword, receivedData);
-        }
-        else // caso "Error: ListenLogic no está inicializado"
-        {
-            qDebug() << "✗ Error: ListenLogic no está inicializado";
-        }
-        // Eliminar los datos procesados del buffer
-        qint64 currentPos = stream.device()->pos();
-        buffer = buffer.mid(currentPos);
-
-        // Reiniciar el stream con el buffer actualizado
-        stream.device()->seek(0);
-    }
-    // Si queda algo en el buffer que no se pudo procesar, conservarlo
-    statusBar()->showMessage("Datos procesados - Clientes: " +                   // este primer paso es para manejar el buffer y procesar los datos recibidos
-                             QString::number(clients.size()) +                   // luego se muestra en la status bar
-                             " - Última actualización: " +                       // la hora actual
-                             QDateTime::currentDateTime().toString("hh:mm:ss")); // Mostrar hora actual
-}
 // Actualiza las métricas generales en la pestaña de vista general
 void MainWindow::setupOverviewTab()
 {
@@ -401,24 +391,22 @@ void MainWindow::setupOverviewTab()
     overviewLayout->setRowStretch(1, 3);
 }
 // Actualiza las métricas generales en la pestaña de vista general
-void MainWindow::setupMemoryMapTab()
-{ // Configura la pestaña de mapa de memoria
-    memoryMapTab = new QWidget();
-    memoryMapLayout = new QGridLayout(memoryMapTab);
-    // Tabla de mapa de memoria
+void MainWindow::setupMemoryMapTab() // Configura la pestaña de mapa de memoria
+{
+    memoryMapTab = new QWidget();                    // crea el widget principal de la pestaña
+    memoryMapLayout = new QGridLayout(memoryMapTab); // layout principal de la pestaña
+    // Panel de Mapa de Memoria
     QGroupBox *memoryMapGroup = new QGroupBox("Mapa de Memoria");
     QVBoxLayout *groupLayout = new QVBoxLayout();
-    // Crear la tabla
+    // Crear tabla
     memoryMapTable = new QTableWidget();
     memoryMapTable->setColumnCount(5);
-    memoryMapTable->setHorizontalHeaderLabels({"Dirección", "Tamaño", "Tipo", "Estado", "Archivo"});
-    memoryMapTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    memoryMapTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    memoryMapTable->setRowCount(0);
-    // Añadir al layout
-    groupLayout->addWidget(memoryMapTable);           // añade la tabla al layout del grupo
-    memoryMapGroup->setLayout(groupLayout);           // establece el layout del grupo
-    memoryMapLayout->addWidget(memoryMapGroup, 0, 0); // añade el grupo al layout principal
+    memoryMapTable->setHorizontalHeaderLabels({"Dirección", "Tamaño", "Tipo", "Estado", "Archivo:Línea"});
+    // Aplicar estilo
+    setupMemoryMapTableStyle();
+    groupLayout->addWidget(memoryMapTable);
+    memoryMapGroup->setLayout(groupLayout);
+    memoryMapLayout->addWidget(memoryMapGroup, 0, 0);
 }
 // Actualiza las métricas generales en la pestaña de vista general
 void MainWindow::setupAllocationByFileTab()
@@ -572,19 +560,20 @@ void MainWindow::updateTimelineChart(const TimelinePoint &point)
     // Forzar actualización del gráfico
     timelineChartView->update();
     // Mostrar en consola
-    qDebug() << "📈 Timeline actualizada - Puntos:" << timelineData.size()
+    qDebug() << " Timeline actualizada - Puntos:" << timelineData.size()
              << "Memoria actual:" << point.memoryMB << "MB";
 }
 // Actualiza los archivos que mas asignaciones tuvieron en la pestaña de vista general
-void MainWindow::updateTopFile(const QVector<TopFile> &topFiles)
-{
-    // Limpiar la tabla
+void MainWindow::updateTopFile(const QVector<TopFile> &topFiles) // Actualiza los top files en la pestaña de vista general
+{                                                                // Limpiar la tabla
     topFilesTable->setRowCount(0);
 
     // Llenar con los top files (máximo 3)
     int row = 0;
-    for (const TopFile &topFile : topFiles) {
-        if (row >= 3) break; // Solo mostramos 3
+    for (const TopFile &topFile : topFiles)
+    {
+        if (row >= 3)
+            break; // Solo mostramos 3
 
         topFilesTable->insertRow(row);
         topFilesTable->setItem(row, 0, new QTableWidgetItem(topFile.filename));
@@ -596,6 +585,136 @@ void MainWindow::updateTopFile(const QVector<TopFile> &topFiles)
     // Forzar actualización
     topFilesTable->update();
     repaint();
-    
+
     qDebug() << "Top Files actualizado - Filas:" << row;
+}
+//  Función helper para colorear filas
+void MainWindow::colorTableRow(int row, const QString &state) // Colorea una fila de la tabla según el estado del bloque
+{
+    QColor rowColor;
+    QColor textColor = Qt::black;
+
+    if (state == "active")
+    {
+        rowColor = QColor(200, 230, 255); // Azul claro
+    }
+    else if (state == "freed")
+    {
+        rowColor = QColor(200, 255, 200); // Verde claro
+    }
+    else if (state == "leak")
+    {
+        rowColor = QColor(255, 200, 200); // Rojo claro
+        textColor = Qt::darkRed;
+    }
+    else
+    {
+        rowColor = QColor(240, 240, 240); // Gris por defecto
+    }
+
+    for (int col = 0; col < memoryMapTable->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = memoryMapTable->item(row, col);
+        if (item)
+        {
+            item->setBackground(rowColor);
+            item->setForeground(textColor);
+        }
+    }
+}
+
+//  Configurar estilo de la tabla
+void MainWindow::setupMemoryMapTableStyle() // Configura el estilo y comportamiento de la tabla de mapa de memoria
+{
+    memoryMapTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    memoryMapTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    memoryMapTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    memoryMapTable->setAlternatingRowColors(true);
+    memoryMapTable->setSortingEnabled(true);
+
+    // Scroll suave
+    memoryMapTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    memoryMapTable->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    // Tamaño mínimo para scroll
+    memoryMapTable->setMinimumHeight(400);
+
+    // Configurar headers
+    memoryMapTable->horizontalHeader()->setStretchLastSection(true);
+    memoryMapTable->verticalHeader()->setDefaultSectionSize(25);
+
+    // Columnas específicas
+    memoryMapTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // Dirección
+    memoryMapTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents); // Tamaño
+    memoryMapTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents); // Tipo
+    memoryMapTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Estado
+    memoryMapTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);          // Archivo
+}
+
+//  Actualizar mapa de memoria con bloques básicos
+void MainWindow::updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks) // Actualiza la tabla de mapa de memoria con los bloques recibidos
+{
+    memoryMapTable->setRowCount(0);
+    memoryMapTable->setRowCount(blocks.size());
+
+    for (int i = 0; i < blocks.size(); ++i)
+    {
+        const auto &block = blocks[i];
+
+        // Dirección (hexadecimal)
+        memoryMapTable->setItem(i, 0, new QTableWidgetItem(QString("0x%1").arg(block.address, 16, 16, QChar('0'))));
+
+        // Tamaño (formateado)
+        memoryMapTable->setItem(i, 1, new QTableWidgetItem(formatMemorySize(block.size)));
+
+        // Tipo
+        memoryMapTable->setItem(i, 2, new QTableWidgetItem(block.type));
+
+        // Estado
+        memoryMapTable->setItem(i, 3, new QTableWidgetItem(block.state));
+
+        // Archivo:Linea
+        memoryMapTable->setItem(i, 4, new QTableWidgetItem(QString("%1:%2").arg(block.filename).arg(block.line)));
+
+        // Aplicar color según estado
+        colorTableRow(i, block.state);
+    }
+
+    // Ajustar columnas al contenido
+    memoryMapTable->resizeColumnsToContents();
+
+    qDebug() << "🗺️ Mapa de memoria actualizado - Bloques:" << blocks.size();
+}
+
+//  Actualizar estadísticas de memoria
+void MainWindow::updateMemoryStats(const MemoryMapTypes::MemoryStats &stats) // Actualiza las estadísticas de memoria en la barra de estado
+{
+    // Mostrar en barra de estado
+    statusBar()->showMessage(
+        QString("Memoria: %1 MB total | %2 MB activos | %3 MB leaks | Bloques: %4 total | %5 activos | %6 leaks")
+            .arg(stats.totalMemoryMB, 0, 'f', 2)
+            .arg(stats.activeMemoryMB, 0, 'f', 2)
+            .arg(stats.leakedMemoryMB, 0, 'f', 2)
+            .arg(stats.totalBlocks)
+            .arg(stats.activeBlocks)
+            .arg(stats.leakedBlocks));
+
+    qDebug() << "📊 Stats actualizados - Activos:" << stats.activeBlocks
+             << "Leaks:" << stats.leakedBlocks;
+}
+// Método auxiliar para formatear tamaño de memoria
+QString MainWindow::formatMemorySize(quint64 bytes)
+{
+    if (bytes < 1024)
+    {
+        return QString("%1 bytes").arg(bytes);
+    }
+    else if (bytes < 1024 * 1024)
+    {
+        return QString("%1 KB").arg(bytes / 1024.0, 0, 'f', 2);
+    }
+    else
+    {
+        return QString("%1 MB").arg(bytes / (1024.0 * 1024.0), 0, 'f', 2);
+    }
 }

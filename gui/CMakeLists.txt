@@ -1,6 +1,6 @@
     cmake_minimum_required(VERSION 3.16)
 
-project(Prueva3 VERSION 0.1 LANGUAGES CXX)
+project(MPGui VERSION 0.1 LANGUAGES CXX)
 
 # Forzar uso de MSVC 2022 (Visual Studio 17)
 if(NOT MSVC)
@@ -45,13 +45,13 @@ set(PROJECT_SOURCES
 )
 
 # Para Qt6, usar qt_add_executable
-qt_add_executable(Prueva3
+qt_add_executable(MPGui
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
     mainwindow.ui
 )
 
-target_link_libraries(Prueva3 PRIVATE
+target_link_libraries(MPGui PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -59,7 +59,7 @@ target_link_libraries(Prueva3 PRIVATE
     Qt6::Network
 )
 
-set_target_properties(Prueva3 PROPERTIES
+set_target_properties(MPGui PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE FALSE
     DEBUG_POSTFIX "d"
@@ -67,8 +67,8 @@ set_target_properties(Prueva3 PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS Prueva3
+install(TARGETS MPGui
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-qt_finalize_executable(Prueva3)
+qt_finalize_executable(MPGui)
