@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(listenLogic, &ListenLogic::basicMemoryMapUpdated, this, &MainWindow::updateMemoryMap);
     connect(listenLogic, &ListenLogic::memoryStatsUpdated, this, &MainWindow::updateMemoryStats);
     connect(listenLogic, &ListenLogic::memoryEventReceived, this, &MainWindow::onMemoryEventReceived);
+    memoryEventsHistory.clear();
     // INICIALIZAR PUNTEROS DE GRÁFICOS
     timelineChart = nullptr;
     timelineSeries = nullptr;
@@ -74,7 +75,6 @@ MainWindow::MainWindow(QWidget *parent)
     mainContainer->setCurrentIndex(0); // Mostrar la pestaña de conexión al inicio
 }
 // Destructor de la clase MainWindow
-
 MainWindow::~MainWindow()
 {
     if (tcpServer)
@@ -616,44 +616,6 @@ void MainWindow::setupMemoryMapTableStyle() // Configura el estilo y comportamie
     memoryMapTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);          // Archivo
 }
 
-//  Actualizar mapa de memoria con bloques básicos
-void MainWindow::updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks)
-{
-    qDebug() << "🔄 Actualizando Memory Map - Bloques recibidos:" << blocks.size();
-
-    // AGREGAR CADA BLOQUE INDIVIDUAL AL HISTORIAL
-    for (const auto &block : blocks)
-    {
-        addToMemoryMapHistory(block);
-    }
-
-    // ACTUALIZAR TABLA CON HISTORIAL COMPLETO
-    memoryMapTable->setRowCount(memoryMapHistory.size());
-
-    qDebug() << "📊 Llenando tabla con" << memoryMapHistory.size() << "filas";
-
-    for (int i = 0; i < memoryMapHistory.size(); ++i)
-    {
-        const auto &block = memoryMapHistory[i];
-
-        // CREAR ITEMS PARA CADA CELDA - ESTO ES CLAVE
-        memoryMapTable->setItem(i, 0, new QTableWidgetItem(QString("0x%1").arg(block.address, 16, 16, QChar('0'))));
-        memoryMapTable->setItem(i, 1, new QTableWidgetItem(formatMemorySize(block.size)));
-        memoryMapTable->setItem(i, 2, new QTableWidgetItem(block.type));
-        memoryMapTable->setItem(i, 3, new QTableWidgetItem(block.state));
-        memoryMapTable->setItem(i, 4, new QTableWidgetItem(QString("%1:%2").arg(block.filename).arg(block.line)));
-
-        // APLICAR COLORES - ESTO DEBE EJECUTARSE
-        colorTableRow(i, block.state);
-    }
-
-    qDebug() << "✅ Tabla actualizada - Filas:" << memoryMapTable->rowCount();
-
-    // FORZAR ACTUALIZACIÓN VISUAL
-    memoryMapTable->viewport()->update();
-    memoryMapTable->update();
-}
-
 //  Actualizar estadísticas de memoria
 void MainWindow::updateMemoryStats(const MemoryMapTypes::MemoryStats &stats) // Actualiza las estadísticas de memoria en la barra de estado
 {
@@ -721,11 +683,6 @@ void MainWindow::addToMemoryMapHistory(const MemoryMapTypes::BasicMemoryBlock &n
         qDebug() << "🗑️ Eliminados" << removed << "bloques antiguos del historial";
     }
 }
-void MainWindow::onMemoryEventReceived(const MemoryEvent &event)
-{
-    addMemoryEvent(event);
-    updateMemoryEventsTable();
-}
 
 void MainWindow::addMemoryEvent(const MemoryEvent &event)
 {
@@ -768,6 +725,73 @@ void MainWindow::updateMemoryEventsTable()
     qDebug() << "🔄 Tabla de eventos actualizada - Eventos:" << memoryEvents.size();
 }
 // Modificar colorTableRow para manejar tipos de evento
+void MainWindow::onMemoryEventReceived(const MemoryEvent &event)
+{
+    addToMemoryEventsHistory(event);
+    updateMemoryEventsHistoryTable();
+}
+
+void MainWindow::addToMemoryEventsHistory(const MemoryEvent &event)
+{
+    // AGREGAR AL HISTORIAL SIN ELIMINAR NUNCA (solo si excede el límite máximo)
+    memoryEventsHistory.append(event);
+
+    // Mantener límite máximo para evitar consumo excesivo de memoria
+    if (memoryEventsHistory.size() > MAX_MEMORY_EVENTS_HISTORY)
+    {
+        memoryEventsHistory.removeFirst();
+        qDebug() << "🗑️ Eliminado evento más antiguo del historial. Total:" << memoryEventsHistory.size();
+    }
+
+    qDebug() << "📝 Evento agregado al historial - Tipo:" << event.event_type
+             << "Addr: 0x" << QString::number(event.address, 16)
+             << "Total eventos en historial:" << memoryEventsHistory.size();
+}
+
+void MainWindow::updateMemoryEventsHistoryTable()
+{
+    qDebug() << "🔄 Actualizando tabla de historial de eventos - Eventos:" << memoryEventsHistory.size();
+
+    // Configurar tabla para mostrar todo el historial
+    memoryMapTable->setRowCount(memoryEventsHistory.size());
+
+    for (int i = 0; i < memoryEventsHistory.size(); ++i)
+    {
+        const auto &event = memoryEventsHistory[i];
+
+        // Crear items para cada celda
+        memoryMapTable->setItem(i, 0, new QTableWidgetItem(QString("0x%1").arg(event.address, 16, 16, QChar('0'))));
+        memoryMapTable->setItem(i, 1, new QTableWidgetItem(formatMemorySize(event.size)));
+        memoryMapTable->setItem(i, 2, new QTableWidgetItem(event.type));
+        memoryMapTable->setItem(i, 3, new QTableWidgetItem(event.event_type));
+        memoryMapTable->setItem(i, 4, new QTableWidgetItem(QString("%1:%2").arg(event.filename).arg(event.line)));
+
+        // Aplicar colores según el tipo de evento
+        colorTableRow(i, event.event_type);
+    }
+
+    // Scroll automático al final para ver los eventos más recientes
+    memoryMapTable->scrollToBottom();
+
+    qDebug() << "✅ Tabla de historial actualizada - Filas:" << memoryMapTable->rowCount();
+}
+void MainWindow::updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks)
+{
+    qDebug() << "🔄 Bloques de memoria recibidos:" << blocks.size();
+
+    // SOLO PARA DEBUG: Mostrar información pero no actualizar la tabla principal
+    // La tabla principal ahora solo muestra el historial de eventos
+
+    for (const auto &block : blocks)
+    {
+        qDebug() << "  📍 Bloque - Addr: 0x" << QString::number(block.address, 16)
+                 << "Size:" << block.size << "State:" << block.state
+                 << "File:" << block.filename << "Line:" << block.line;
+    }
+
+    // NO actualizamos la tabla aquí, solo mostramos en consola para debug
+    qDebug() << "ℹ️ Información de bloques mostrada en consola (tabla muestra solo historial de eventos)";
+}
 void MainWindow::colorTableRow(int row, const QString &eventType)
 {
     QColor rowColor;
@@ -776,31 +800,34 @@ void MainWindow::colorTableRow(int row, const QString &eventType)
     if (eventType == "alloc")
     {
         rowColor = QColor(200, 255, 200); // Verde claro para asignaciones
-        qDebug() << "🎨 Color VERDE para fila" << row << "- Evento: alloc";
     }
     else if (eventType == "free")
     {
         rowColor = QColor(255, 255, 200); // Amarillo claro para liberaciones
-        qDebug() << "🎨 Color AMARILLO para fila" << row << "- Evento: free";
     }
     else if (eventType == "realloc")
     {
         rowColor = QColor(200, 200, 255); // Azul claro para reasignaciones
-        qDebug() << "🎨 Color AZUL para fila" << row << "- Evento: realloc";
+    }
+    else if (eventType == "leak") // 🆕 CASO ESPECÍFICO PARA LEAKS
+    {
+        rowColor = QColor(255, 200, 200); // Rojo claro para memory leaks
+        qDebug() << "🎨 Color ROJO para fila" << row << "- Evento: leak";
     }
     else
     {
-        rowColor = QColor(255, 0, 0); // Rojo por defecto
+        rowColor = Qt::white; // Blanco por defecto
     }
 
     // Aplicar color a todas las celdas de la fila
     for (int col = 0; col < memoryMapTable->columnCount(); ++col)
     {
         QTableWidgetItem *item = memoryMapTable->item(row, col);
-        if (item)
-        {
-            item->setBackground(rowColor);
-            item->setForeground(textColor);
+        if (!item) {
+            item = new QTableWidgetItem();
+            memoryMapTable->setItem(row, col, item);
         }
+        item->setBackground(rowColor);
+        item->setForeground(textColor);
     }
 }

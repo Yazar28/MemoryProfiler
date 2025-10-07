@@ -51,6 +51,9 @@ int forcedLeaksCreated = 0;
 int normalAllocations = 0;
 int totalFreed = 0;
 
+// 🆕 NUEVO: Contador de eventos de leak enviados
+int leakEventsSent = 0;
+
 void initializeFileData()
 {
     fileAllocations["main.cpp"] = 1500;
@@ -101,9 +104,28 @@ void exitContext(int contextId)
                     {
                         if (block.address == addr && block.state == "active")
                         {
-                            block.state = "leaked"; // Estado especial para leaks
+                            block.state = "leak"; // 🆕 CAMBIO: "leak" en lugar de "leaked"
                             leaksDetected++;
                             forcedLeaksCreated++;
+
+                            // 🆕 ENVIAR EVENTO DE LEAK ESPECÍFICO
+                            if (globalClient) {
+                                MemoryEvent leakEvent;
+                                leakEvent.address = block.address;
+                                leakEvent.size = block.size;
+                                leakEvent.event_type = "leak"; // 🆕 Tipo específico para leak
+                                leakEvent.filename = block.filename;
+                                leakEvent.line = block.line;
+                                leakEvent.timestamp = QDateTime::currentMSecsSinceEpoch();
+                                leakEvent.type = "leak";
+
+                                globalClient->sendMemoryEvent(leakEvent);
+                                leakEventsSent++;
+
+                                qDebug() << "🔴🆕 EVENTO LEAK ENVIADO - Addr: 0x"
+                                         << QString::number(block.address, 16)
+                                         << "Size:" << block.size << "bytes";
+                            }
 
                             qDebug() << "🔴🆕 LEAK FORZADO en contexto" << contextId
                                      << "- Addr: 0x" << QString::number(addr, 16)
@@ -161,7 +183,7 @@ void sendGeneralMetrics()
     {
         if (block.state == "active") {
             activeBlocks++;
-        } else if (block.state == "leaked") {
+        } else if (block.state == "leak") { // 🆕 CAMBIO: "leak" en lugar de "leaked"
             leakedBlocks++;
             leakedMemoryMB += block.size / (1024.0 * 1024.0);
         }
@@ -268,7 +290,6 @@ void sendMemoryEvent(const QString &eventType, quint64 address, quint64 size, co
     event.filename = filename;
     event.line = line;
     event.timestamp = QDateTime::currentMSecsSinceEpoch();
-    event.type = "unknown";
 
     // Tipo específico basado en tamaño/contexto
     if (size <= 1024)
@@ -286,7 +307,32 @@ void sendMemoryEvent(const QString &eventType, quint64 address, quint64 size, co
     } else if (eventType == "free") {
         qDebug() << "🔵 FREE  - Addr: 0x" << QString::number(address, 16)
                  << "Size:" << size << "bytes";
+    } else if (eventType == "leak") {
+        qDebug() << "🔴🆕 LEAK EVENT - Addr: 0x" << QString::number(address, 16)
+                 << "Size:" << size << "bytes -" << filename << ":" << line;
     }
+}
+
+// 🆕 NUEVA FUNCIÓN: Enviar evento de leak específico
+void sendLeakEvent(quint64 address, quint64 size, const QString &filename, int line)
+{
+    if (!globalClient)
+        return;
+
+    MemoryEvent leakEvent;
+    leakEvent.address = address;
+    leakEvent.size = size;
+    leakEvent.event_type = "leak"; // 🆕 Tipo específico para leak
+    leakEvent.filename = filename;
+    leakEvent.line = line;
+    leakEvent.timestamp = QDateTime::currentMSecsSinceEpoch();
+    leakEvent.type = "leak"; // 🆕 Tipo leak
+
+    globalClient->sendMemoryEvent(leakEvent);
+    leakEventsSent++;
+
+    qDebug() << "🔴🎯 EVENTO LEAK ENVIADO - Addr: 0x" << QString::number(address, 16)
+             << "Size:" << size << "bytes -" << filename << ":" << line;
 }
 
 void sendMemoryMap()
@@ -302,7 +348,7 @@ void sendMemoryMap()
     // SIMULAR EVENTOS INDIVIDUALES EN TIEMPO REAL
     int actionType = QRandomGenerator::global()->bounded(100);
 
-    if (actionType < 60) // 🔴 60% de probabilidad de NUEVA ASIGNACIÓN (más allocations)
+    if (actionType < 60) // 🔴 60% de probabilidad de NUEVA ASIGNACIÓN
     {
         // Nueva asignación
         quint64 address = nextAddress;
@@ -317,7 +363,7 @@ void sendMemoryMap()
         newBlock.address = address;
         newBlock.size = size;
         newBlock.type = "alloc";
-        newBlock.state = "active"; // 🔴 SIEMPRE activo inicialmente
+        newBlock.state = "active";
         newBlock.filename = filename;
         newBlock.line = line;
         memoryBlocks.append(newBlock);
@@ -332,7 +378,7 @@ void sendMemoryMap()
                  << std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
     }
-    else if (actionType < 75 && !memoryBlocks.isEmpty()) // 🔴 SOLO 15% de liberaciones (menos frees)
+    else if (actionType < 75 && !memoryBlocks.isEmpty()) // 🔴 15% de liberaciones
     {
         // Liberación - SOLO si hay suficientes bloques activos
         QVector<int> activeIndices;
@@ -376,12 +422,12 @@ void sendMemoryMap()
             quint64 newSize = block.size * 2;
             sendMemoryEvent("alloc", block.address, newSize, block.filename, block.line);
             block.size = newSize;
-            // 🔴 MANTENER como ACTIVO - no cambiar estado
+            // MANTENER como ACTIVO
         }
     }
     else
     {
-        // 🔴 15%: CREAR LEAK DIRECTO (sin pasar por contexto)
+        // 🔴 15%: CREAR LEAK DIRECTO
         if (!memoryBlocks.isEmpty()) {
             QVector<int> activeIndices;
             for (int i = 0; i < memoryBlocks.size(); ++i) {
@@ -395,8 +441,12 @@ void sendMemoryMap()
                 int blockIndex = activeIndices[randomIndex];
                 auto &block = memoryBlocks[blockIndex];
 
-                block.state = "leaked";
+                // 🆕 CAMBIO: Usar "leak" en lugar de "leaked"
+                block.state = "leak";
                 forcedLeaksCreated++;
+
+                // 🆕 ENVIAR EVENTO DE LEAK ESPECÍFICO
+                sendLeakEvent(block.address, block.size, block.filename, block.line);
 
                 qDebug() << "🔴🎯 LEAK DIRECTO CREADO - Addr: 0x"
                          << QString::number(block.address, 16)
@@ -414,7 +464,7 @@ void sendMemoryMap()
         int active = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                    [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
         int leaked = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leaked"; });
+                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
         int freed = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "freed"; });
 
@@ -440,7 +490,9 @@ int main(int argc, char *argv[])
     qDebug() << "================================================";
     qDebug() << "🧠 MEMORY PROFILER - PRUEBA COMPLETA CON LEAKS VISIBLES";
     qDebug() << "================================================";
-    qDebug() << "🔴 CONFIGURACIÓN PARA GENERAR LEAKS:";
+    qDebug() << "🔴 CONFIGURACIÓN MEJORADA PARA LEAKS:";
+    qDebug() << "   - Estado de leak: 'leak' (consistente con GUI)";
+    qDebug() << "   - Eventos de leak específicos enviados";
     qDebug() << "   - 60% probabilidad de NUEVAS ASIGNACIONES";
     qDebug() << "   - SOLO 15% probabilidad de LIBERACIONES";
     qDebug() << "   - 60% de LEAKS al salir de contextos";
@@ -513,7 +565,7 @@ int main(int argc, char *argv[])
                              int finalActive = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                                              [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
                              int finalLeaked = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leaked"; });
+                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
                              int finalFreed = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "freed"; });
 
@@ -525,6 +577,7 @@ int main(int argc, char *argv[])
                              qDebug() << "";
                              qDebug() << "🔴 LEAKS GENERADOS:";
                              qDebug() << "   - LEAKS FORZADOS:    " << forcedLeaksCreated;
+                             qDebug() << "   - EVENTOS LEAK ENVIADOS: " << leakEventsSent;
                              qDebug() << "   - CONTEXTOS:         " << currentContextId;
                              qDebug() << "   - DETECCIONES:       " << contextLeakCounter;
                              qDebug() << "";

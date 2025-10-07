@@ -45,6 +45,13 @@ private slots:
     void updateTimelineChart(const TimelinePoint &point);                          // slot para actualizar el grafico de la linea de tiempo
     void onMemoryEventReceived(const MemoryEvent &event);                          // Nuevo slot para eventos
 private:
+    // Historial de eventos de memoria (nunca se limpia)
+    QVector<MemoryEvent> memoryEventsHistory;
+    // Constantes
+    static const int MAX_MEMORY_EVENTS_HISTORY = 5000; // Aumenta el límite para historial completo
+    // Métodos
+    void addToMemoryEventsHistory(const MemoryEvent &event);
+    void updateMemoryEventsHistoryTable();
     QVector<MemoryEvent> memoryEvents;
     const int MAX_MEMORY_EVENTS = 2000;
     void addMemoryEvent(const MemoryEvent &event);
