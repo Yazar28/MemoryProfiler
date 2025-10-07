@@ -51,6 +51,21 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
         handleFileAllocationSummary(data);
         return;
     }
+    if (keyword == "LEAK_SUMMARY")
+    {
+        handleLeakSummary(data);
+        return;
+    }
+    if (keyword == "LEAKS_BY_FILE")
+    {
+        handleLeaksByFile(data);
+        return;
+    }
+    if (keyword == "LEAK_TIMELINE")
+    {
+        handleLeakTimeline(data);
+        return;
+    }
     //  MOVER ESTO AL PRINCIPIO - Para otros keywords, procesar como string con separadores '|'
     QString dataStr = QString::fromUtf8(data);
     QStringList parts = dataStr.split('|');
@@ -382,5 +397,61 @@ void ListenLogic::handleFileAllocationSummary(const QByteArray &data)
     else
     {
         qDebug() << "✗ Error deserializando FileAllocationSummary";
+    }
+}
+void ListenLogic::handleLeakSummary(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    LeakSummary summary;
+    stream >> summary;
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✓ LeakSummary recibido - Total leaked:" << summary.totalLeakedMB << "MB";
+        emit leakSummaryUpdated(summary);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando LeakSummary";
+    }
+}
+
+void ListenLogic::handleLeaksByFile(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    QVector<LeakByFile> leaksByFile;
+    stream >> leaksByFile;
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✓ LeaksByFile recibido - Archivos:" << leaksByFile.size();
+        emit leaksByFileUpdated(leaksByFile);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando LeaksByFile";
+    }
+}
+
+void ListenLogic::handleLeakTimeline(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    QVector<LeakTimelinePoint> leakTimeline;
+    stream >> leakTimeline;
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✓ LeakTimeline recibido - Puntos:" << leakTimeline.size();
+        emit leakTimelineUpdated(leakTimeline);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando LeakTimeline";
     }
 }

@@ -194,6 +194,84 @@ struct LeakTimelinePoint // Punto en la línea de tiempo de pérdidas de memoria
     double leakedMB;   // representa la memoria perdida en MB en este punto de tiempo
     quint64 leakCount; // representa el número de pérdidas de memoria en este punto de tiempo
 };
+// Ya existen estas estructuras, pero agreguemos serialización
+inline QDataStream &operator<<(QDataStream &stream, const LeakSummary &summary)
+{
+    stream << summary.totalLeakedMB
+           << summary.biggestLeakMB
+           << summary.biggestLeakLocation
+           << summary.mostFrequentLeakFile
+           << summary.leakRate;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, LeakSummary &summary)
+{
+    stream >> summary.totalLeakedMB >> summary.biggestLeakMB >> summary.biggestLeakLocation >> summary.mostFrequentLeakFile >> summary.leakRate;
+    return stream;
+}
+
+inline QDataStream &operator<<(QDataStream &stream, const LeakByFile &leak)
+{
+    stream << leak.filename << leak.leakedMB << leak.leakCount;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, LeakByFile &leak)
+{
+    stream >> leak.filename >> leak.leakedMB >> leak.leakCount;
+    return stream;
+}
+
+inline QDataStream &operator<<(QDataStream &stream, const LeakTimelinePoint &point)
+{
+    stream << point.timestamp << point.leakedMB << point.leakCount;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, LeakTimelinePoint &point)
+{
+    stream >> point.timestamp >> point.leakedMB >> point.leakCount;
+    return stream;
+}
+
+// Serialización para QVector<LeakByFile>
+inline QDataStream &operator<<(QDataStream &stream, const QVector<LeakByFile> &leaks)
+{
+    stream << quint32(leaks.size());
+    for (const LeakByFile &leak : leaks)
+        stream << leak;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, QVector<LeakByFile> &leaks)
+{
+    quint32 size;
+    stream >> size;
+    leaks.resize(size);
+    for (quint32 i = 0; i < size; ++i)
+        stream >> leaks[i];
+    return stream;
+}
+
+// Serialización para QVector<LeakTimelinePoint>
+inline QDataStream &operator<<(QDataStream &stream, const QVector<LeakTimelinePoint> &points)
+{
+    stream << quint32(points.size());
+    for (const LeakTimelinePoint &point : points)
+        stream << point;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, QVector<LeakTimelinePoint> &points)
+{
+    quint32 size;
+    stream >> size;
+    points.resize(size);
+    for (quint32 i = 0; i < size; ++i)
+        stream >> points[i];
+    return stream;
+}
 // ================================
 // Estructuras de Comunicación
 // ================================

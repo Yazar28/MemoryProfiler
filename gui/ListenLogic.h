@@ -28,6 +28,9 @@ signals:                                                                        
     void memoryStatsUpdated(const MemoryMapTypes::MemoryStats &stats);                   //
     void memoryEventReceived(const MemoryEvent &event);                                  // Nueva señal para eventos individua
     void fileAllocationSummaryUpdated(const QVector<FileAllocationSummary> &fileAllocs); //
+    void leakSummaryUpdated(const LeakSummary &summary);
+    void leaksByFileUpdated(const QVector<LeakByFile> &leaksByFile);
+    void leakTimelineUpdated(const QVector<LeakTimelinePoint> &leakTimeline);
 
 private:
     // Manejadores para diferentes tipos de datos
@@ -42,4 +45,7 @@ private:
     void handleMemoryStats(const QByteArray &data);           // Maneja las estadísticas de memoria (estructura binaria)
     void handleMemoryEvent(const QByteArray &data);           //
     void handleFileAllocationSummary(const QByteArray &data); //
+    void handleLeakSummary(const QByteArray &data);
+    void handleLeaksByFile(const QByteArray &data);
+    void handleLeakTimeline(const QByteArray &data);
 };

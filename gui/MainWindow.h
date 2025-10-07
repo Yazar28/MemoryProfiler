@@ -54,6 +54,9 @@ Q_OBJECT                                                     // macro necesaria 
     // variable para saber si el servidor esta iniciado
     // espacio privado los slots de la clase
 private slots:
+    void updateLeakSummary(const LeakSummary &summary);
+    void updateLeaksByFile(const QVector<LeakByFile> &leaksByFile);
+    void updateLeakTimeline(const QVector<LeakTimelinePoint> &leakTimeline);
     void updateGeneralMetrics(const GeneralMetrics &metrics);
     void onStartServerClicked();                                                        // slot para manejar el click en el boton de iniciar servidor
     void onNewConnection();                                                             // slot para manejar una nueva conexion
@@ -149,6 +152,21 @@ private:
     QBarSeries *allocationBarSeries;
     QChart *allocationBarChart;
     QSplitter *allocationSplitter;
+
+    // Chart series
+    QBarSeries *leaksByFileSeries;
+    QPieSeries *leaksDistributionSeries;
+    QLineSeries *leaksTimelineSeries;
+
+    // Charts
+    QChart *leaksByFileChart;
+    QChart *leaksDistributionChart;
+    QChart *leaksTimelineChart;
+
+    // Data storage
+    QVector<LeakTimelinePoint> leakTimelineData;
+    QVector<LeakByFile> currentLeaksByFile;
+    LeakSummary currentLeakSummary;
 };
 
 #endif // end of MAINWINDOW_H sirve para evitar multiples inclusiones archivos que no lo utilizan

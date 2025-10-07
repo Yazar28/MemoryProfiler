@@ -194,3 +194,45 @@ void Client::sendMemoryEvent(const MemoryEvent &event)
     sendSerialized("MEMORY_EVENT", byteArray);
     qDebug() << "Client: ✓ MEMORY_EVENT enviado";
 }
+void Client::sendLeakSummary(const LeakSummary &summary)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar LEAK_SUMMARY";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << summary;
+    sendSerialized("LEAK_SUMMARY", byteArray);
+    qDebug() << "Client: ✓ LEAK_SUMMARY enviado";
+}
+void Client::sendLeaksByFile(const QVector<LeakByFile> &leaksByFile)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar LEAKS_BY_FILE";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << leaksByFile;
+    sendSerialized("LEAKS_BY_FILE", byteArray);
+    qDebug() << "Client: ✓ LEAKS_BY_FILE enviado";
+}
+void Client::sendLeakTimeline(const QVector<LeakTimelinePoint> &leakTimeline)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar LEAK_TIMELINE";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << leakTimeline;
+    sendSerialized("LEAK_TIMELINE", byteArray);
+    qDebug() << "Client: ✓ LEAK_TIMELINE enviado";
+}

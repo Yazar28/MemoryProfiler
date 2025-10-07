@@ -20,7 +20,7 @@ int timelineCount = 0;
 int topFilesCount = 0;
 int memoryMapCount = 0;
 int totalSeconds = 0;
-int fileAllocSummaryCount = 0; // 🆕 Contador de envíos de FILE_ALLOCATION_SUMMARY
+int fileAllocSummaryCount = 0;
 
 // Lista de archivos para TopFiles
 QVector<QString> allFiles = {
@@ -52,8 +52,16 @@ int forcedLeaksCreated = 0;
 int normalAllocations = 0;
 int totalFreed = 0;
 
-// 🆕 NUEVO: Contador de eventos de leak enviados
+// Contador de eventos de leak enviados
 int leakEventsSent = 0;
+
+// ================================
+// VARIABLES PARA MEMORY LEAKS
+// ================================
+LeakSummary currentLeakSummary;
+QVector<LeakByFile> currentLeaksByFile;
+QVector<LeakTimelinePoint> currentLeakTimeline;
+int leakDataSendCount = 0;
 
 void initializeFileData()
 {
@@ -74,6 +82,103 @@ void initializeFileData()
     fileMemory["ui_manager.cpp"] = 52.1;
     fileMemory["audio_system.cpp"] = 38.4;
     fileMemory["shader_compiler.cpp"] = 25.6;
+}
+
+void initializeLeakData()
+{
+    // Inicializar datos de leaks de ejemplo
+    currentLeakSummary.totalLeakedMB = 0.0;
+    currentLeakSummary.biggestLeakMB = 0.0;
+    currentLeakSummary.biggestLeakLocation = "Ninguno";
+    currentLeakSummary.mostFrequentLeakFile = "Ninguno";
+    currentLeakSummary.leakRate = 0.0;
+
+    currentLeaksByFile.clear();
+    currentLeakTimeline.clear();
+}
+
+void updateLeakData()
+{
+    if (!globalClient)
+        return;
+
+    leakDataSendCount++;
+
+    // Simular datos de leaks realistas basados en el estado actual
+    int totalLeakedBlocks = forcedLeaksCreated;
+    double totalLeakedMemory = 0.0;
+    double biggestLeak = 0.0;
+    QString biggestLeakLocation = "Ninguno";
+    QHash<QString, int> leaksPerFile;
+    QHash<QString, double> memoryPerFile;
+
+    // Calcular leaks reales de los bloques de memoria
+    for (const auto &block : memoryBlocks)
+    {
+        if (block.state == "leak")
+        {
+            double leakMB = block.size / (1024.0 * 1024.0);
+            totalLeakedMemory += leakMB;
+
+            if (leakMB > biggestLeak)
+            {
+                biggestLeak = leakMB;
+                biggestLeakLocation = QString("%1:%2").arg(block.filename).arg(block.line);
+            }
+
+            leaksPerFile[block.filename]++;
+            memoryPerFile[block.filename] += leakMB;
+        }
+    }
+
+    // Encontrar archivo con más leaks
+    QString mostFrequentFile = "Ninguno";
+    int maxLeaks = 0;
+    for (auto it = leaksPerFile.begin(); it != leaksPerFile.end(); ++it)
+    {
+        if (it.value() > maxLeaks)
+        {
+            maxLeaks = it.value();
+            mostFrequentFile = it.key();
+        }
+    }
+
+    // Actualizar LeakSummary
+    currentLeakSummary.totalLeakedMB = totalLeakedMemory;
+    currentLeakSummary.biggestLeakMB = biggestLeak;
+    currentLeakSummary.biggestLeakLocation = biggestLeakLocation;
+    currentLeakSummary.mostFrequentLeakFile = mostFrequentFile;
+    currentLeakSummary.leakRate = normalAllocations > 0 ? (totalLeakedBlocks * 100.0 / normalAllocations) : 0.0;
+
+    // Actualizar LeaksByFile
+    currentLeaksByFile.clear();
+    for (auto it = leaksPerFile.begin(); it != leaksPerFile.end(); ++it)
+    {
+        LeakByFile leak;
+        leak.filename = it.key();
+        leak.leakCount = it.value();
+        leak.leakedMB = memoryPerFile[it.key()];
+        currentLeaksByFile.append(leak);
+    }
+
+    // Actualizar LeakTimeline
+    LeakTimelinePoint newPoint;
+    newPoint.timestamp = QDateTime::currentMSecsSinceEpoch();
+    newPoint.leakedMB = totalLeakedMemory;
+    newPoint.leakCount = totalLeakedBlocks;
+    currentLeakTimeline.append(newPoint);
+
+    // Mantener máximo 50 puntos en la timeline
+    if (currentLeakTimeline.size() > 50)
+        currentLeakTimeline.removeFirst();
+
+    // Enviar datos al servidor
+    globalClient->sendLeakSummary(currentLeakSummary);
+    globalClient->sendLeaksByFile(currentLeaksByFile);
+    globalClient->sendLeakTimeline(currentLeakTimeline);
+
+    qDebug() << "🔴 LEAKS enviados - Total:" << totalLeakedMemory << "MB, Bloques:" << totalLeakedBlocks
+             << "Archivos:" << currentLeaksByFile.size() << "(envío #" << leakDataSendCount << ")";
 }
 
 // Simular entrada a un nuevo contexto/función
@@ -105,17 +210,17 @@ void exitContext(int contextId)
                     {
                         if (block.address == addr && block.state == "active")
                         {
-                            block.state = "leak"; // 🆕 CAMBIO: "leak" en lugar de "leaked"
+                            block.state = "leak"; // CAMBIO: "leak" en lugar de "leaked"
                             leaksDetected++;
                             forcedLeaksCreated++;
 
-                            // 🆕 ENVIAR EVENTO DE LEAK ESPECÍFICO
+                            // ENVIAR EVENTO DE LEAK ESPECÍFICO
                             if (globalClient)
                             {
                                 MemoryEvent leakEvent;
                                 leakEvent.address = block.address;
                                 leakEvent.size = block.size;
-                                leakEvent.event_type = "leak"; // 🆕 Tipo específico para leak
+                                leakEvent.event_type = "leak"; // Tipo específico para leak
                                 leakEvent.filename = block.filename;
                                 leakEvent.line = block.line;
                                 leakEvent.timestamp = QDateTime::currentMSecsSinceEpoch();
@@ -188,7 +293,7 @@ void sendGeneralMetrics()
             activeBlocks++;
         }
         else if (block.state == "leak")
-        { // 🆕 CAMBIO: "leak" en lugar de "leaked"
+        {
             leakedBlocks++;
             leakedMemoryMB += block.size / (1024.0 * 1024.0);
         }
@@ -323,7 +428,7 @@ void sendMemoryEvent(const QString &eventType, quint64 address, quint64 size, co
     }
 }
 
-// 🆕 NUEVA FUNCIÓN: Enviar evento de leak específico
+// NUEVA FUNCIÓN: Enviar evento de leak específico
 void sendLeakEvent(quint64 address, quint64 size, const QString &filename, int line)
 {
     if (!globalClient)
@@ -332,11 +437,11 @@ void sendLeakEvent(quint64 address, quint64 size, const QString &filename, int l
     MemoryEvent leakEvent;
     leakEvent.address = address;
     leakEvent.size = size;
-    leakEvent.event_type = "leak"; // 🆕 Tipo específico para leak
+    leakEvent.event_type = "leak"; // Tipo específico para leak
     leakEvent.filename = filename;
     leakEvent.line = line;
     leakEvent.timestamp = QDateTime::currentMSecsSinceEpoch();
-    leakEvent.type = "leak"; // 🆕 Tipo leak
+    leakEvent.type = "leak"; // Tipo leak
 
     globalClient->sendMemoryEvent(leakEvent);
     leakEventsSent++;
@@ -345,7 +450,7 @@ void sendLeakEvent(quint64 address, quint64 size, const QString &filename, int l
              << "Size:" << size << "bytes -" << filename << ":" << line;
 }
 
-// 🆕 NUEVA FUNCIÓN: Enviar resumen de asignación por archivo
+// NUEVA FUNCIÓN: Enviar resumen de asignación por archivo
 void sendFileAllocationSummaryTest()
 {
     if (!globalClient)
@@ -399,7 +504,7 @@ void sendMemoryMap()
     // SIMULAR EVENTOS INDIVIDUALES EN TIEMPO REAL
     int actionType = QRandomGenerator::global()->bounded(100);
 
-    if (actionType < 60) // 🔴 60% de probabilidad de NUEVA ASIGNACIÓN
+    if (actionType < 60) // 60% de probabilidad de NUEVA ASIGNACIÓN
     {
         // Nueva asignación
         quint64 address = nextAddress;
@@ -430,7 +535,7 @@ void sendMemoryMap()
                                   [](const MemoryMapTypes::BasicMemoryBlock &b)
                                   { return b.state == "active"; });
     }
-    else if (actionType < 75 && !memoryBlocks.isEmpty()) // 🔴 15% de liberaciones
+    else if (actionType < 75 && !memoryBlocks.isEmpty()) // 15% de liberaciones
     {
         // Liberación - SOLO si hay suficientes bloques activos
         QVector<int> activeIndices;
@@ -486,7 +591,7 @@ void sendMemoryMap()
     }
     else
     {
-        // 🔴 15%: CREAR LEAK DIRECTO
+        // 15%: CREAR LEAK DIRECTO
         if (!memoryBlocks.isEmpty())
         {
             QVector<int> activeIndices;
@@ -504,11 +609,10 @@ void sendMemoryMap()
                 int blockIndex = activeIndices[randomIndex];
                 auto &block = memoryBlocks[blockIndex];
 
-                // 🆕 CAMBIO: Usar "leak" en lugar de "leaked"
                 block.state = "leak";
                 forcedLeaksCreated++;
 
-                // 🆕 ENVIAR EVENTO DE LEAK ESPECÍFICO
+                // ENVIAR EVENTO DE LEAK ESPECÍFICO
                 sendLeakEvent(block.address, block.size, block.filename, block.line);
 
                 qDebug() << "🔴🎯 LEAK DIRECTO CREADO - Addr: 0x"
@@ -529,7 +633,7 @@ void sendMemoryMap()
                                    { return b.state == "active"; });
         int leaked = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                    [](const MemoryMapTypes::BasicMemoryBlock &b)
-                                   { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
+                                   { return b.state == "leak"; });
         int freed = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                   [](const MemoryMapTypes::BasicMemoryBlock &b)
                                   { return b.state == "freed"; });
@@ -563,6 +667,7 @@ int main(int argc, char *argv[])
     qDebug() << "   - SOLO 15% probabilidad de LIBERACIONES";
     qDebug() << "   - 60% de LEAKS al salir de contextos";
     qDebug() << "   - 15% de LEAKS DIRECTOS adicionales";
+    qDebug() << "   - DATOS DE MEMORY LEAKS ENVIADOS CADA 4 SEGUNDOS";
     qDebug() << "================================================";
     qDebug() << "Conectando al servidor en localhost:" << port;
 
@@ -581,12 +686,14 @@ int main(int argc, char *argv[])
     qDebug() << "   - TIMELINE_POINT     cada 1 segundo";
     qDebug() << "   - TOP_FILES          cada 5 segundos";
     qDebug() << "   - BASIC_MEMORY_MAP   cada 3 segundos";
-    qDebug() << "   - FILE_ALLOC_SUMMARY cada 7 segundos"; // 🆕 AGREGAR ESTA LÍNEA
+    qDebug() << "   - FILE_ALLOC_SUMMARY cada 7 segundos";
+    qDebug() << "   - MEMORY_LEAKS       cada 4 segundos";
     qDebug() << "   - CAMBIO CONTEXTO    cada 8 segundos";
     qDebug() << "";
 
     // Inicializar datos de archivos
     initializeFileData();
+    initializeLeakData();
 
     // Iniciar primer contexto
     enterNewContext();
@@ -615,9 +722,14 @@ int main(int argc, char *argv[])
                              sendMemoryMap();
                          }
 
-                         // 🆕 ENVIAR FILE_ALLOCATION_SUMMARY cada 7 segundos
+                         // ENVIAR FILE_ALLOCATION_SUMMARY cada 7 segundos
                          if (totalSeconds % 7 == 0) {
                              sendFileAllocationSummaryTest();
+                         }
+
+                         // ENVIAR DATOS DE MEMORY LEAKS cada 4 segundos
+                         if (totalSeconds % 4 == 0) {
+                             updateLeakData();
                          }
 
                          // Cambiar de contexto cada 8 segundos - DETECCIÓN DE LEAKS
@@ -637,7 +749,7 @@ int main(int argc, char *argv[])
                              int finalActive = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                                              [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
                              int finalLeaked = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
+                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leak"; });
                              int finalFreed = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
                                                             [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "freed"; });
 
@@ -652,6 +764,7 @@ int main(int argc, char *argv[])
                              qDebug() << "   - EVENTOS LEAK ENVIADOS: " << leakEventsSent;
                              qDebug() << "   - CONTEXTOS:         " << currentContextId;
                              qDebug() << "   - DETECCIONES:       " << contextLeakCounter;
+                             qDebug() << "   - ENVÍOS LEAKS:      " << leakDataSendCount;
                              qDebug() << "";
                              qDebug() << "📈 ESTADÍSTICAS:";
                              qDebug() << "   - ASIGNACIONES:      " << normalAllocations;
@@ -660,7 +773,7 @@ int main(int argc, char *argv[])
                              qDebug() << "   - TIMELINE_POINT:    " << timelineCount;
                              qDebug() << "   - TOP_FILES:         " << topFilesCount;
                              qDebug() << "   - BASIC_MEMORY_MAP:  " << memoryMapCount;
-                             qDebug() << "   - FILE_ALLOC_SUMMARY: " << fileAllocSummaryCount; // 🆕 Mostrar cuántas veces se envió
+                             qDebug() << "   - FILE_ALLOC_SUMMARY: " << fileAllocSummaryCount;
                              qDebug() << "================================================";
                              qDebug() << "🎯 RESULTADO: " << (finalActive + finalLeaked) << "LEAKS VISIBLES EN GUI 🎯";
 
@@ -679,7 +792,8 @@ int main(int argc, char *argv[])
                            sendTimelinePoint();
                            sendTopFiles();
                            sendMemoryMap();
-                           sendFileAllocationSummaryTest(); // 🆕 AGREGAR EN ENVÍO INICIAL
+                           sendFileAllocationSummaryTest();
+                           updateLeakData(); // ENVÍO INICIAL DE LEAKS
 
                            // Iniciar timer principal
                            mainTimer.start(1000); });

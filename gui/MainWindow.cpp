@@ -18,6 +18,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(listenLogic, &ListenLogic::memoryStatsUpdated, this, &MainWindow::updateMemoryStats);
     connect(listenLogic, &ListenLogic::memoryEventReceived, this, &MainWindow::onMemoryEventReceived);
     connect(listenLogic, &ListenLogic::fileAllocationSummaryUpdated, this, &MainWindow::updateFileAllocationSummary);
+
+    connect(listenLogic, &ListenLogic::leakSummaryUpdated, this, &MainWindow::updateLeakSummary);
+    connect(listenLogic, &ListenLogic::leaksByFileUpdated, this, &MainWindow::updateLeaksByFile);
+    connect(listenLogic, &ListenLogic::leakTimelineUpdated, this, &MainWindow::updateLeakTimeline);
     memoryEventsHistory.clear();
     // INICIALIZAR PUNTEROS DE GRÁFICOS
     timelineChart = nullptr;
@@ -393,54 +397,6 @@ void MainWindow::setupMemoryMapTab() // Configura la pestaña de mapa de memoria
     groupLayout->addWidget(memoryMapTable);
     memoryMapGroup->setLayout(groupLayout);
     memoryMapLayout->addWidget(memoryMapGroup, 0, 0);
-}
-// Actualiza las métricas generales en la pestaña de vista general
-void MainWindow::setupMemoryLeaksTab()
-{                                                        // Configura la pestaña de memory leaks
-    memoryLeaksTab = new QWidget();                      // crea el widget principal de la pestaña
-    memoryLeaksLayout = new QGridLayout(memoryLeaksTab); // layout principal de la pestaña
-    // Panel de resumen
-    QGroupBox *summaryGroup = new QGroupBox("Resumen de Memory Leaks");
-    QGridLayout *summaryLayout = new QGridLayout(); // layout de 2 filas y 2 columnas para las métricas de resumen
-    // setea las labels
-    totalLeakedMemoryLabel = new QLabel("Total memoria fugada: 0 MB");
-    totalLeakedMemoryLabel->setTextInteractionFlags(Qt::NoTextInteraction); // evita que el usuario pueda seleccionar el texto
-    // Leak más grande
-    biggestLeakLabel = new QLabel("Leak más grande: 0 MB (archivo.cpp:123)");
-    biggestLeakLabel->setTextInteractionFlags(Qt::NoTextInteraction); // evita que el usuario pueda seleccionar el texto
-    // Archivo con más leaks
-    mostFrequentLeakFileLabel = new QLabel("Archivo con más leaks: archivo.cpp");
-    mostFrequentLeakFileLabel->setTextInteractionFlags(Qt::NoTextInteraction); // evita que el usuario pueda seleccionar el texto
-    // Tasa de leaks
-    leakRateLabel = new QLabel("Tasa de leaks: 0%");
-    leakRateLabel->setTextInteractionFlags(Qt::NoTextInteraction); // evita que el usuario pueda seleccionar el texto
-    // Añadir al layout
-    summaryLayout->addWidget(totalLeakedMemoryLabel, 0, 0);    // añade las etiquetas al layout en la posición especificada
-    summaryLayout->addWidget(biggestLeakLabel, 0, 1);          // añade las etiquetas al layout en la posición especificada
-    summaryLayout->addWidget(mostFrequentLeakFileLabel, 1, 0); // añade las etiquetas al layout en la posición especificada
-    summaryLayout->addWidget(leakRateLabel, 1, 1);             // añade las etiquetas al layout en la posición especificada
-    // establece el layout del grupo
-    summaryGroup->setLayout(summaryLayout); // establece el layout del grupo
-    // Gráficos
-    QGroupBox *chartsGroup = new QGroupBox("Gráficos de Memory Leaks");
-    QGridLayout *chartsLayout = new QGridLayout(); // layout de 2 filas y 2 columnas para los gráficos
-    leaksByFileChartView = new QChartView();
-    leaksByFileChartView->setRenderHint(QPainter::Antialiasing); // mejora la calidad del renderizado
-    leaksDistributionChartView = new QChartView();
-    leaksDistributionChartView->setRenderHint(QPainter::Antialiasing); // mejora la calidad del renderizado
-    leaksTimelineChartView = new QChartView();
-    leaksTimelineChartView->setRenderHint(QPainter::Antialiasing); // mejora la calidad del renderizado
-    // Añadir al layout
-    chartsLayout->addWidget(leaksByFileChartView, 0, 0);         // añade la vista del gráfico al layout
-    chartsLayout->addWidget(leaksDistributionChartView, 0, 1);   // añade la vista del gráfico al layout
-    chartsLayout->addWidget(leaksTimelineChartView, 1, 0, 1, 2); // añade la vista del gráfico al layout, ocupando 2 columnas
-    // establece el layout del grupo
-    chartsGroup->setLayout(chartsLayout);
-    // Organizar en el layout principal
-    memoryLeaksLayout->addWidget(summaryGroup, 0, 0);
-    memoryLeaksLayout->addWidget(chartsGroup, 1, 0);
-    // Configurar proporciones
-    memoryLeaksLayout->setRowStretch(1, 3);
 }
 // Actualiza las métricas generales en la pestaña de vista general
 void MainWindow::updateGeneralMetrics(const GeneralMetrics &metrics)
@@ -1035,4 +991,237 @@ void MainWindow::setupAllocationByFileTab()
 
     // Estado inicial
     updateFileAllocationSummary(QVector<FileAllocationSummary>());
+}
+void MainWindow::setupMemoryLeaksTab()
+{
+    memoryLeaksTab = new QWidget();
+    memoryLeaksLayout = new QGridLayout(memoryLeaksTab);
+
+    // ==================== RESUMEN ====================
+    QGroupBox *summaryGroup = new QGroupBox("Resumen de Memory Leaks");
+    QGridLayout *summaryLayout = new QGridLayout();
+
+    // Crear labels de resumen
+    totalLeakedMemoryLabel = new QLabel("Total memoria fugada: 0 MB");
+    biggestLeakLabel = new QLabel("Leak más grande: 0 MB");
+    mostFrequentLeakFileLabel = new QLabel("Archivo con más leaks: Ninguno");
+    leakRateLabel = new QLabel("Tasa de leaks: 0%");
+
+    // Configurar estilo de labels
+    QFont summaryFont = totalLeakedMemoryLabel->font();
+    summaryFont.setPointSize(10);
+    totalLeakedMemoryLabel->setFont(summaryFont);
+    biggestLeakLabel->setFont(summaryFont);
+    mostFrequentLeakFileLabel->setFont(summaryFont);
+    leakRateLabel->setFont(summaryFont);
+
+    // Organizar en layout
+    summaryLayout->addWidget(totalLeakedMemoryLabel, 0, 0);
+    summaryLayout->addWidget(biggestLeakLabel, 0, 1);
+    summaryLayout->addWidget(mostFrequentLeakFileLabel, 1, 0);
+    summaryLayout->addWidget(leakRateLabel, 1, 1);
+
+    summaryGroup->setLayout(summaryLayout);
+
+    // ==================== GRÁFICAS ====================
+    QGroupBox *chartsGroup = new QGroupBox("Gráficos de Memory Leaks");
+    QGridLayout *chartsLayout = new QGridLayout();
+
+    // Gráfico de barras - Leaks por archivo
+    leaksByFileSeries = new QBarSeries();
+    leaksByFileChart = new QChart();
+    leaksByFileChart->addSeries(leaksByFileSeries);
+    leaksByFileChart->setTitle("Leaks por Archivo");
+    leaksByFileChart->setAnimationOptions(QChart::SeriesAnimations);
+    leaksByFileChart->setTheme(QChart::ChartThemeLight);
+
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    leaksByFileChart->addAxis(axisX, Qt::AlignBottom);
+    leaksByFileSeries->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Memoria Fugada (MB)");
+    leaksByFileChart->addAxis(axisY, Qt::AlignLeft);
+    leaksByFileSeries->attachAxis(axisY);
+
+    leaksByFileChartView = new QChartView(leaksByFileChart);
+    leaksByFileChartView->setRenderHint(QPainter::Antialiasing);
+    leaksByFileChartView->setMinimumSize(400, 300);
+
+    // Gráfico de pie - Distribución de leaks
+    leaksDistributionSeries = new QPieSeries();
+    leaksDistributionChart = new QChart();
+    leaksDistributionChart->addSeries(leaksDistributionSeries);
+    leaksDistributionChart->setTitle("Distribución de Leaks por Archivo");
+    leaksDistributionChart->setAnimationOptions(QChart::SeriesAnimations);
+    leaksDistributionChart->setTheme(QChart::ChartThemeLight);
+    leaksDistributionChart->legend()->setAlignment(Qt::AlignRight);
+
+    leaksDistributionChartView = new QChartView(leaksDistributionChart);
+    leaksDistributionChartView->setRenderHint(QPainter::Antialiasing);
+    leaksDistributionChartView->setMinimumSize(400, 300);
+
+    // Gráfico de línea - Timeline de leaks
+    leaksTimelineSeries = new QLineSeries();
+    leaksTimelineSeries->setName("Memoria Fugada (MB)");
+    leaksTimelineChart = new QChart();
+    leaksTimelineChart->addSeries(leaksTimelineSeries);
+    leaksTimelineChart->setTitle("Línea de Tiempo de Leaks");
+    leaksTimelineChart->setAnimationOptions(QChart::SeriesAnimations);
+    leaksTimelineChart->setTheme(QChart::ChartThemeLight);
+
+    QValueAxis *timelineAxisX = new QValueAxis();
+    timelineAxisX->setTitleText("Tiempo (segundos)");
+    leaksTimelineChart->addAxis(timelineAxisX, Qt::AlignBottom);
+    leaksTimelineSeries->attachAxis(timelineAxisX);
+
+    QValueAxis *timelineAxisY = new QValueAxis();
+    timelineAxisY->setTitleText("Memoria Fugada (MB)");
+    leaksTimelineChart->addAxis(timelineAxisY, Qt::AlignLeft);
+    leaksTimelineSeries->attachAxis(timelineAxisY);
+
+    leaksTimelineChartView = new QChartView(leaksTimelineChart);
+    leaksTimelineChartView->setRenderHint(QPainter::Antialiasing);
+    leaksTimelineChartView->setMinimumSize(800, 300);
+
+    // Organizar gráficas en el layout
+    chartsLayout->addWidget(leaksByFileChartView, 0, 0);
+    chartsLayout->addWidget(leaksDistributionChartView, 0, 1);
+    chartsLayout->addWidget(leaksTimelineChartView, 1, 0, 1, 2);
+
+    chartsGroup->setLayout(chartsLayout);
+
+    // Organizar en layout principal
+    memoryLeaksLayout->addWidget(summaryGroup, 0, 0);
+    memoryLeaksLayout->addWidget(chartsGroup, 1, 0);
+
+    // Configurar proporciones
+    memoryLeaksLayout->setRowStretch(1, 3);
+}
+void MainWindow::updateLeakSummary(const LeakSummary &summary)
+{
+    currentLeakSummary = summary;
+
+    // Actualizar labels
+    totalLeakedMemoryLabel->setText(QString("Total memoria fugada: %1 MB").arg(summary.totalLeakedMB, 0, 'f', 2));
+    biggestLeakLabel->setText(QString("Leak más grande: %1 MB (%2)").arg(summary.biggestLeakMB, 0, 'f', 2).arg(summary.biggestLeakLocation));
+    mostFrequentLeakFileLabel->setText(QString("Archivo con más leaks: %1").arg(summary.mostFrequentLeakFile));
+    leakRateLabel->setText(QString("Tasa de leaks: %1%").arg(summary.leakRate, 0, 'f', 2));
+
+    qDebug() << "🔄 Resumen de leaks actualizado - Total:" << summary.totalLeakedMB << "MB";
+}
+
+void MainWindow::updateLeaksByFile(const QVector<LeakByFile> &leaksByFile)
+{
+    currentLeaksByFile = leaksByFile;
+
+    // Limpiar series anteriores
+    leaksByFileSeries->clear();
+    leaksDistributionSeries->clear();
+
+    if (leaksByFile.isEmpty())
+        return;
+
+    // Preparar datos para gráfico de barras
+    QBarSet *barSet = new QBarSet("Memoria Fugada");
+    QStringList categories;
+
+    // Encontrar el valor máximo para escalar colores
+    double maxLeak = 0;
+    for (const LeakByFile &leak : leaksByFile)
+    {
+        if (leak.leakedMB > maxLeak)
+            maxLeak = leak.leakedMB;
+    }
+
+    for (const LeakByFile &leak : leaksByFile)
+    {
+        *barSet << leak.leakedMB;
+
+        // Acortar nombres largos de archivos
+        QString shortName = leak.filename;
+        if (shortName.length() > 20)
+            shortName = shortName.left(17) + "...";
+        categories << shortName;
+
+        // Agregar al gráfico de pie
+        QPieSlice *slice = leaksDistributionSeries->append(leak.filename, leak.leakedMB);
+
+        // Colorear según la cantidad (rojo para leaks grandes)
+        double intensity = leak.leakedMB / maxLeak;
+        if (intensity > 0.7)
+            slice->setColor(QColor(255, 100, 100));
+        else if (intensity > 0.4)
+            slice->setColor(QColor(255, 150, 100));
+        else
+            slice->setColor(QColor(255, 200, 100));
+
+        slice->setLabel(QString("%1\n%2 MB").arg(leak.filename).arg(leak.leakedMB, 0, 'f', 1));
+    }
+
+    leaksByFileSeries->append(barSet);
+
+    // Configurar eje X para gráfico de barras
+    QBarCategoryAxis *axisX = qobject_cast<QBarCategoryAxis *>(leaksByFileChart->axes(Qt::Horizontal).first());
+    if (axisX)
+    {
+        axisX->clear();
+        axisX->append(categories);
+    }
+
+    // Auto-ajustar eje Y
+    QValueAxis *axisY = qobject_cast<QValueAxis *>(leaksByFileChart->axes(Qt::Vertical).first());
+    if (axisY)
+    {
+        double maxValue = 0;
+        for (const LeakByFile &leak : leaksByFile)
+        {
+            if (leak.leakedMB > maxValue)
+                maxValue = leak.leakedMB;
+        }
+        axisY->setRange(0, maxValue * 1.1); // 10% de margen
+    }
+
+    qDebug() << "📊 Gráficos de leaks por archivo actualizados - Archivos:" << leaksByFile.size();
+}
+
+void MainWindow::updateLeakTimeline(const QVector<LeakTimelinePoint> &leakTimeline)
+{
+    leakTimelineData = leakTimeline;
+    leaksTimelineSeries->clear();
+
+    if (leakTimeline.isEmpty())
+        return;
+
+    // Agregar puntos a la serie
+    for (const LeakTimelinePoint &point : leakTimeline)
+    {
+        qint64 secondsFromStart = (point.timestamp - startTime) / 1000;
+        leaksTimelineSeries->append(secondsFromStart, point.leakedMB);
+    }
+
+    // Auto-ajustar ejes
+    if (!leakTimeline.isEmpty())
+    {
+        double minTime = (leakTimeline.first().timestamp - startTime) / 1000.0;
+        double maxTime = (leakTimeline.last().timestamp - startTime) / 1000.0;
+        double maxLeak = 0;
+
+        for (const LeakTimelinePoint &point : leakTimeline)
+        {
+            if (point.leakedMB > maxLeak)
+                maxLeak = point.leakedMB;
+        }
+
+        QValueAxis *axisX = qobject_cast<QValueAxis *>(leaksTimelineChart->axes(Qt::Horizontal).first());
+        QValueAxis *axisY = qobject_cast<QValueAxis *>(leaksTimelineChart->axes(Qt::Vertical).first());
+
+        if (axisX && axisY)
+        {
+            axisX->setRange(qMax(0.0, minTime - 5), maxTime + 5); // 5 segundos de margen
+            axisY->setRange(0, maxLeak * 1.1);                    // 10% de margen
+        }
+    }
+
+    qDebug() << "📈 Línea de tiempo de leaks actualizada - Puntos:" << leakTimeline.size();
 }
