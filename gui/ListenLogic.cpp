@@ -5,70 +5,69 @@
 #include <QLineSeries>
 #include <QPieSeries>
 #include "profiler_structures.h"
-#include<QDataStream>
+#include <QDataStream>
 
 // procesa los datos recibidos y llama a los manejadores adecuados
 void ListenLogic::processData(const QString &keyword, const QByteArray &data)
+{
+    qDebug() << "=== PROCESANDO DATOS ===";
+    qDebug() << "Keyword:" << keyword;
+    qDebug() << "Tamaño datos:" << data.size() << "bytes";
+
+    // Procesar datos binarios (estructuras)
+    if (keyword == "GENERAL_METRICS")
     {
-        qDebug() << "=== PROCESANDO DATOS ===";
-        qDebug() << "Keyword:" << keyword;
-        qDebug() << "Tamaño datos:" << data.size() << "bytes";
+        handleGeneralMetrics(data);
+        return;
+    }
+    if (keyword == "TIMELINE_POINT")
+    {
+        handleTimelinePoint(data);
+        return;
+    }
+    if (keyword == "TOP_FILES")
+    {
+        handleTopFile(data);
+        return;
+    }
+    // NUEVOS KEYWORDS PARA MEMORY MAP
+    if (keyword == "BASIC_MEMORY_MAP")
+    {
+        handleBasicMemoryMap(data);
+        return;
+    }
+    if (keyword == "MEMORY_STATS")
+    {
+        handleMemoryStats(data);
+        return;
+    }
+    //  MOVER ESTO AL PRINCIPIO - Para otros keywords, procesar como string con separadores '|'
+    QString dataStr = QString::fromUtf8(data);
+    QStringList parts = dataStr.split('|');
 
-        // Procesar datos binarios (estructuras)
-        if (keyword == "GENERAL_METRICS")
-        {
-            handleGeneralMetrics(data);
-            return;
-        }
-        if (keyword == "TIMELINE_POINT")
-        {
-            handleTimelinePoint(data);
-            return;
-        }
-        if (keyword == "TOP_FILES")
-        {
-            handleTopFile(data);
-            return;
-        }
-        // NUEVOS KEYWORDS PARA MEMORY MAP
-        if (keyword == "BASIC_MEMORY_MAP")
-        {
-            handleBasicMemoryMap(data);
-            return;
-        }
-        if (keyword == "MEMORY_STATS")
-        {
-            handleMemoryStats(data);
-            return;
-        }
-        //  MOVER ESTO AL PRINCIPIO - Para otros keywords, procesar como string con separadores '|'
-        QString dataStr = QString::fromUtf8(data);
-        QStringList parts = dataStr.split('|');
-
-        if (keyword == "LIVE_UPDATE")
-        {
-            handleLiveUpdate(parts);
-            return;
-        }
-        if (keyword == "MEMORY_MAP")
-        {
-            handleMemoryMap(parts);
-            return;
-        }
-        if (keyword == "FILE_ALLOCATIONS")
-        {
-            handleFileAllocations(parts);
-            return;
-        }
-        if (keyword == "LEAK_REPORT")
-        {
-            handleLeakReport(parts);
-            return;
-        }
-
-        qDebug() << "✗ Keyword desconocido:" << keyword;
+    if (keyword == "LIVE_UPDATE")
+    {
+        handleLiveUpdate(parts);
+        return;
+    }
+    if (keyword == "MEMORY_MAP")
+    {
+        handleMemoryMap(parts);
+        return;
+    }
+    if (keyword == "FILE_ALLOCATIONS")
+    {
+        handleFileAllocations(parts);
+        return;
+    }
+    if (keyword == "LEAK_REPORT")
+    {
+        handleLeakReport(parts);
+        return;
     }
 
+    qDebug() << "✗ Keyword desconocido:" << keyword;
+}
 // Maneja actualizaciones en vivo (formato Qstring)
 void ListenLogic::handleLiveUpdate(const QStringList &parts)
 {
@@ -266,56 +265,64 @@ void ListenLogic::handleTimelinePoint(const QByteArray &data)
 }
 //  Manejador para mapa de memoria básico
 void ListenLogic::handleBasicMemoryMap(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    QVector<MemoryMapTypes::BasicMemoryBlock> blocks;
+    quint32 size;
+    stream >> size;
+
+    qDebug() << "📦 BasicMemoryMap - Tamaño datos:" << data.size()
+             << "Bloques a deserializar:" << size;
+
+    for (quint32 i = 0; i < size; ++i)
     {
-        QDataStream stream(data);
-        stream.setByteOrder(QDataStream::BigEndian);
+        MemoryMapTypes::BasicMemoryBlock block;
+        stream >> block.address >> block.size >> block.type >> block.state >> block.filename >> block.line;
+        blocks.append(block);
 
-        QVector<MemoryMapTypes::BasicMemoryBlock> blocks;
-        quint32 size;
-        stream >> size;
-
-        for (quint32 i = 0; i < size; ++i) {
-            MemoryMapTypes::BasicMemoryBlock block;
-            stream >> block.address >> block.size >> block.type >> block.state
-                >> block.filename >> block.line;
-            blocks.append(block);
-        }
-
-        if (stream.status() == QDataStream::Ok) {
-            qDebug() << "✓ BasicMemoryMap recibido - Bloques:" << blocks.size();
-            emit basicMemoryMapUpdated(blocks);
-        } else {
-            qDebug() << "✗ Error deserializando BasicMemoryMap";
-        }
+        qDebug() << "  📍 Bloque" << i << "- Addr: 0x" << QString::number(block.address, 16)
+                 << "Size:" << block.size << "State:" << block.state;
     }
 
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✅ BasicMemoryMap deserializado OK - Bloques:" << blocks.size();
+        emit basicMemoryMapUpdated(blocks);
+    }
+    else
+    {
+        qDebug() << "❌ ERROR deserializando BasicMemoryMap - Status:" << stream.status();
+    }
+}
 //  Manejador para estadísticas de memoria
 void ListenLogic::handleMemoryStats(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    MemoryMapTypes::MemoryStats stats;
+    stream >> stats.totalBlocks >> stats.activeBlocks >> stats.freedBlocks >> stats.leakedBlocks >> stats.totalMemoryMB >> stats.activeMemoryMB >> stats.leakedMemoryMB >> stats.snapshotTime;
+
+    if (stream.status() == QDataStream::Ok)
     {
-        QDataStream stream(data);
-        stream.setByteOrder(QDataStream::BigEndian);
-
-        MemoryMapTypes::MemoryStats stats;
-        stream >> stats.totalBlocks >> stats.activeBlocks >> stats.freedBlocks
-            >> stats.leakedBlocks >> stats.totalMemoryMB >> stats.activeMemoryMB
-            >> stats.leakedMemoryMB >> stats.snapshotTime;
-
-        if (stream.status() == QDataStream::Ok) {
-            qDebug() << "✓ MemoryStats recibido - Activos:" << stats.activeBlocks
-                    << "Leaks:" << stats.leakedBlocks;
-            emit memoryStatsUpdated(stats);
-        } else {
-            qDebug() << "✗ Error deserializando MemoryStats";
-        }
+        qDebug() << "✓ MemoryStats recibido - Activos:" << stats.activeBlocks
+                 << "Leaks:" << stats.leakedBlocks;
+        emit memoryStatsUpdated(stats);
     }
-
+    else
+    {
+        qDebug() << "✗ Error deserializando MemoryStats";
+    }
+}
 // Convierte bytes a MB con dos decimales
 QString ListenLogic::bytesToMB(quint64 bytes)
-    {
-        return QString::number(bytes / (1024.0 * 1024.0), 'f', 2);
-    }
+{
+    return QString::number(bytes / (1024.0 * 1024.0), 'f', 2);
+}
 // Formatea una dirección como hexadecimal
 QString ListenLogic::formatAddress(quint64 addr)
-    {
-        return QString("0x%1").arg(addr, 16, 16, QChar('0'));
-    }
+{
+    return QString("0x%1").arg(addr, 16, 16, QChar('0'));
+}

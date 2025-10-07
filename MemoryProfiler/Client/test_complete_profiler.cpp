@@ -30,6 +30,20 @@ QVector<QString> allFiles = {
 QHash<QString, quint64> fileAllocations;
 QHash<QString, double> fileMemory;
 
+// Estado del memory map - SIMULA ASIGNACIONES REALES
+QVector<MemoryMapTypes::BasicMemoryBlock> memoryBlocks;
+quint64 nextAddress = 0x10000000;
+
+// SIMULACIÓN DE CONTEXTOS Y LEAKS
+struct Context {
+    int id;
+    QVector<quint64> allocatedBlocks; // Direcciones asignadas en este contexto
+    bool active;
+};
+QVector<Context> contexts;
+int currentContextId = 0;
+int contextLeakCounter = 0;
+
 Client *globalClient = nullptr;
 
 void initializeFileData()
@@ -53,6 +67,54 @@ void initializeFileData()
     fileMemory["shader_compiler.cpp"] = 25.6;
 }
 
+// Simular entrada a un nuevo contexto/función
+void enterNewContext() {
+    Context newContext;
+    newContext.id = ++currentContextId;
+    newContext.active = true;
+    contexts.append(newContext);
+    qDebug() << "🚀 ENTRANDO a contexto" << currentContextId;
+}
+
+// Simular salida de contexto - DETECCIÓN DE LEAKS
+void exitContext(int contextId) {
+    for (auto &context : contexts) {
+        if (context.id == contextId && context.active) {
+            context.active = false;
+
+            // SIMULAR DETECCIÓN DE LEAKS: 20% de bloques no liberados se marcan como leaks
+            int leaksDetected = 0;
+            for (quint64 addr : context.allocatedBlocks) {
+                if (QRandomGenerator::global()->bounded(100) < 20) { // 20% probabilidad de leak
+                    for (auto &block : memoryBlocks) {
+                        if (block.address == addr && block.state == "active") {
+                            block.state = "leak";
+                            leaksDetected++;
+                            qDebug() << "🚨 LEAK DETECTADO al salir de contexto" << contextId
+                                     << "- Addr: 0x" << QString::number(addr, 16)
+                                     << "File:" << block.filename;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            qDebug() << "🔚 SALIENDO de contexto" << contextId
+                     << "- Leaks detectados:" << leaksDetected
+                     << "de" << context.allocatedBlocks.size() << "bloques";
+            contextLeakCounter += leaksDetected;
+            break;
+        }
+    }
+}
+
+// Asignar bloque en contexto actual
+void allocateInCurrentContext(quint64 address) {
+    if (!contexts.isEmpty() && contexts.last().active) {
+        contexts.last().allocatedBlocks.append(address);
+    }
+}
+
 void sendGeneralMetrics()
 {
     if (!globalClient)
@@ -72,9 +134,17 @@ void sendGeneralMetrics()
         memoryTrend = (QRandomGenerator::global()->generateDouble() - 0.5) * 2.0;
     }
 
+    // Calcular leaks basado en bloques marcados como leak
+    double leakedMemoryMB = 0.0;
+    for (const auto &block : memoryBlocks) {
+        if (block.state == "leak") {
+            leakedMemoryMB += block.size / (1024.0 * 1024.0);
+        }
+    }
+
     metrics.currentUsageMB = currentMemory;
     metrics.activeAllocations = 500 + QRandomGenerator::global()->bounded(1500);
-    metrics.memoryLeaksMB = 0.5 + QRandomGenerator::global()->bounded(10.0);
+    metrics.memoryLeaksMB = leakedMemoryMB;
     metrics.maxMemoryMB = qMax(metrics.maxMemoryMB, currentMemory + 20.0);
     metrics.totalAllocations = 5000 + QRandomGenerator::global()->bounded(45000);
 
@@ -167,63 +237,64 @@ void sendMemoryMap()
 
     memoryMapCount++;
 
-    QVector<MemoryMapTypes::BasicMemoryBlock> blocks;
-
     // Archivos y tipos realistas para simulación
     const char *fileNames[] = {"renderer.cpp", "physics.cpp", "main.cpp", "utils.cpp", "network.cpp"};
     const char *types[] = {"new", "malloc", "calloc", "new[]"};
 
-    // Generar entre 10-20 bloques de memoria
-    int blockCount = 10 + QRandomGenerator::global()->bounded(10);
+    // SIMULACIÓN DE ASIGNACIONES DINÁMICAS - HISTORIAL EN TIEMPO REAL
+    int actionType = QRandomGenerator::global()->bounded(100);
 
-    for (int i = 0; i < blockCount; ++i)
-    {
-        MemoryMapTypes::BasicMemoryBlock block;
-        block.address = 0x10000000 + i * 0x1000;
-        block.size = 64 * (i + 1) * 1024;
+    if (actionType < 60) {
+        // 60% de probabilidad: Nueva asignación
+        MemoryMapTypes::BasicMemoryBlock newBlock;
+        newBlock.address = nextAddress;
+        nextAddress += 0x1000; // Incrementar para siguiente bloque
+
+        newBlock.size = 64 * (QRandomGenerator::global()->bounded(10) + 1) * 1024;
 
         // Tipo aleatorio
         int typeIndex = QRandomGenerator::global()->bounded(4);
-        block.type = types[typeIndex];
-
-        // Distribución realista de estados
-        int stateRand = QRandomGenerator::global()->bounded(100);
-        if (stateRand < 60)
-        {
-            block.state = "active";
-        }
-        else if (stateRand < 90)
-        {
-            block.state = "freed";
-        }
-        else
-        {
-            block.state = "leak";
-        }
+        newBlock.type = types[typeIndex];
+        newBlock.state = "active";
 
         // Archivo y línea
         int fileIndex = QRandomGenerator::global()->bounded(5);
-        block.filename = fileNames[fileIndex];
-        block.line = 100 + i * 5;
+        newBlock.filename = fileNames[fileIndex];
+        newBlock.line = 100 + QRandomGenerator::global()->bounded(500);
 
-        blocks.append(block);
+        memoryBlocks.append(newBlock);
+        allocateInCurrentContext(newBlock.address);
+
+        qDebug() << "➕ NUEVA ASIGNACIÓN en contexto" << currentContextId
+                 << "- Addr:" << QString("0x%1").arg(newBlock.address, 16, 16, QChar('0'))
+                 << "Size:" << newBlock.size << "Type:" << newBlock.type;
+
+    } else if (actionType < 85 && !memoryBlocks.isEmpty()) {
+        // 25% de probabilidad: Liberar bloque existente
+        int blockIndex = QRandomGenerator::global()->bounded(memoryBlocks.size());
+        if (memoryBlocks[blockIndex].state == "active") {
+            memoryBlocks[blockIndex].state = "freed";
+            qDebug() << "➖ LIBERACIÓN - Addr:" << QString("0x%1").arg(memoryBlocks[blockIndex].address, 16, 16, QChar('0'));
+        }
     }
+    // Los leaks se detectan automáticamente al salir de contextos
 
-    globalClient->send("BASIC_MEMORY_MAP", blocks);
+    // Enviar todos los bloques actuales (historial completo)
+    globalClient->send("BASIC_MEMORY_MAP", memoryBlocks);
 
     // Contar estadísticas para el log
-    int activeCount = 0, leakCount = 0;
-    for (const auto &block : blocks)
+    int activeCount = 0, freedCount = 0, leakCount = 0;
+    for (const auto &block : memoryBlocks)
     {
-        if (block.state == "active")
-            activeCount++;
-        if (block.state == "leak")
-            leakCount++;
+        if (block.state == "active") activeCount++;
+        else if (block.state == "freed") freedCount++;
+        else if (block.state == "leak") leakCount++;
     }
 
     qDebug() << "🗺️  [" << memoryMapCount << "] BASIC_MEMORY_MAP -"
-             << "Bloques:" << blocks.size()
+             << "Total:" << memoryBlocks.size()
              << "- Activos:" << activeCount
+             << "- Liberados:" << freedCount
              << "- Leaks:" << leakCount;
 }
 
@@ -239,7 +310,7 @@ int main(int argc, char *argv[])
         port = QString(argv[1]).toUShort();
 
     qDebug() << "================================================";
-    qDebug() << "🧠 MEMORY PROFILER - PRUEBA COMPLETA";
+    qDebug() << "🧠 MEMORY PROFILER - PRUEBA COMPLETA CON LEAKS REALISTAS";
     qDebug() << "================================================";
     qDebug() << "Conectando al servidor en localhost:" << port;
 
@@ -257,66 +328,86 @@ int main(int argc, char *argv[])
     qDebug() << "   - GENERAL_METRICS    cada 2 segundos";
     qDebug() << "   - TIMELINE_POINT     cada 1 segundo";
     qDebug() << "   - TOP_FILES          cada 5 segundos";
-    qDebug() << "   - BASIC_MEMORY_MAP   cada 8 segundos";
+    qDebug() << "   - BASIC_MEMORY_MAP   cada 3 segundos";
+    qDebug() << "   - CAMBIO CONTEXTO    cada 8 segundos";
+    qDebug() << "";
+    qDebug() << "🔍 DETECCIÓN DE LEAKS:";
+    qDebug() << "   - Se simulan contextos (funciones/bloques de código)";
+    qDebug() << "   - Al salir de contexto, 20% de bloques se marcan como leaks";
+    qDebug() << "   - Los leaks se acumulan en el historial";
     qDebug() << "";
 
     // Inicializar datos de archivos
     initializeFileData();
 
+    // Iniciar primer contexto
+    enterNewContext();
+
     // Timer principal
     QTimer mainTimer;
     QObject::connect(&mainTimer, &QTimer::timeout, [&]()
                      {
-        totalSeconds++;
+                         totalSeconds++;
 
-        // Enviar TimelinePoint cada segundo
-        sendTimelinePoint();
+                         // Enviar TimelinePoint cada segundo
+                         sendTimelinePoint();
 
-        // Enviar GeneralMetrics cada 2 segundos
-        if (totalSeconds % 2 == 0) {
-            sendGeneralMetrics();
-        }
+                         // Enviar GeneralMetrics cada 2 segundos
+                         if (totalSeconds % 2 == 0) {
+                             sendGeneralMetrics();
+                         }
 
-        // Enviar TopFiles cada 5 segundos
-        if (totalSeconds % 5 == 0) {
-            sendTopFiles();
-        }
+                         // Enviar TopFiles cada 5 segundos
+                         if (totalSeconds % 5 == 0) {
+                             sendTopFiles();
+                         }
 
-        // Enviar MemoryMap cada 8 segundos
-        if (totalSeconds % 8 == 0) {
-            sendMemoryMap();
-        }
+                         // Enviar MemoryMap cada 3 segundos
+                         if (totalSeconds % 3 == 0) {
+                             sendMemoryMap();
+                         }
 
-        // Detener después de 60 segundos
-        if (totalSeconds >= 60) {
-            qDebug() << "\n================================================";
-            qDebug() << "✅ PRUEBA COMPLETADA";
-            qDebug() << "================================================";
-            qDebug() << "Resumen de envíos:";
-            qDebug() << "   - GENERAL_METRICS:   " << metricsCount;
-            qDebug() << "   - TIMELINE_POINT:    " << timelineCount;
-            qDebug() << "   - TOP_FILES:         " << topFilesCount;
-            qDebug() << "   - BASIC_MEMORY_MAP:  " << memoryMapCount;
-            qDebug() << "================================================";
+                         // Cambiar de contexto cada 8 segundos - DETECCIÓN DE LEAKS
+                         if (totalSeconds % 8 == 0 && totalSeconds > 0) {
+                             // Salir del contexto actual (detectar leaks)
+                             exitContext(currentContextId);
+                             // Entrar a nuevo contexto
+                             enterNewContext();
+                         }
 
-            mainTimer.stop();
-            client.disconnectFromServer();
-            QTimer::singleShot(1000, &app, &QCoreApplication::quit);
-        } });
+                         // Detener después de 60 segundos
+                         if (totalSeconds >= 60) {
+                             qDebug() << "\n================================================";
+                             qDebug() << "✅ PRUEBA COMPLETADA";
+                             qDebug() << "================================================";
+                             qDebug() << "Resumen de envíos:";
+                             qDebug() << "   - GENERAL_METRICS:   " << metricsCount;
+                             qDebug() << "   - TIMELINE_POINT:    " << timelineCount;
+                             qDebug() << "   - TOP_FILES:         " << topFilesCount;
+                             qDebug() << "   - BASIC_MEMORY_MAP:  " << memoryMapCount;
+                             qDebug() << "   - Contextos ejecutados:" << currentContextId;
+                             qDebug() << "   - Leaks detectados:    " << contextLeakCounter;
+                             qDebug() << "   - Bloques en historial:" << memoryBlocks.size();
+                             qDebug() << "================================================";
+
+                             mainTimer.stop();
+                             client.disconnectFromServer();
+                             QTimer::singleShot(1000, &app, &QCoreApplication::quit);
+                         } });
 
     // Envío inicial
     QTimer::singleShot(100, [&]()
                        {
-        qDebug() << "🚀 Envío inicial de datos...";
+                           qDebug() << "🚀 Envío inicial de datos...";
 
-        // Enviar un conjunto inicial de todos los tipos
-        sendGeneralMetrics();
-        sendTimelinePoint();
-        sendTopFiles();
-        sendMemoryMap();
+                           // Enviar un conjunto inicial de todos los tipos
+                           sendGeneralMetrics();
+                           sendTimelinePoint();
+                           sendTopFiles();
+                           sendMemoryMap();
 
-        // Iniciar timer principal
-        mainTimer.start(1000); });
+                           // Iniciar timer principal
+                           mainTimer.start(1000); });
 
     qDebug() << "";
     qDebug() << "✅ Prueba en ejecución...";

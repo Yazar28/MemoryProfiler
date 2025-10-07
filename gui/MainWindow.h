@@ -43,8 +43,10 @@ private slots:
     void updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks); // slot para actualizar el mapa de memoria
     void updateMemoryStats(const MemoryMapTypes::MemoryStats &stats);              // slot para actualizar las estadisticas de memoria
     void updateTimelineChart(const TimelinePoint &point);                          // slot para actualizar el grafico de la linea de tiempo
-    // parte privada de la clase
 private:
+    QVector<MemoryMapTypes::BasicMemoryBlock> memoryMapHistory;
+    const int MAX_MEMORY_MAP_HISTORY = 5000;
+    void addToMemoryMapHistory(const MemoryMapTypes::BasicMemoryBlock &block);
     void setupConnectionTab();                // configura la pestaña de conexion
     void setupOverviewTab();                  // configura la pestaña de overview
     void setupMemoryMapTab();                 // configura la pestaña de memory map

@@ -588,41 +588,6 @@ void MainWindow::updateTopFile(const QVector<TopFile> &topFiles) // Actualiza lo
 
     qDebug() << "Top Files actualizado - Filas:" << row;
 }
-//  Función helper para colorear filas
-void MainWindow::colorTableRow(int row, const QString &state) // Colorea una fila de la tabla según el estado del bloque
-{
-    QColor rowColor;
-    QColor textColor = Qt::black;
-
-    if (state == "active")
-    {
-        rowColor = QColor(200, 230, 255); // Azul claro
-    }
-    else if (state == "freed")
-    {
-        rowColor = QColor(200, 255, 200); // Verde claro
-    }
-    else if (state == "leak")
-    {
-        rowColor = QColor(255, 200, 200); // Rojo claro
-        textColor = Qt::darkRed;
-    }
-    else
-    {
-        rowColor = QColor(240, 240, 240); // Gris por defecto
-    }
-
-    for (int col = 0; col < memoryMapTable->columnCount(); ++col)
-    {
-        QTableWidgetItem *item = memoryMapTable->item(row, col);
-        if (item)
-        {
-            item->setBackground(rowColor);
-            item->setForeground(textColor);
-        }
-    }
-}
-
 //  Configurar estilo de la tabla
 void MainWindow::setupMemoryMapTableStyle() // Configura el estilo y comportamiento de la tabla de mapa de memoria
 {
@@ -652,38 +617,41 @@ void MainWindow::setupMemoryMapTableStyle() // Configura el estilo y comportamie
 }
 
 //  Actualizar mapa de memoria con bloques básicos
-void MainWindow::updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks) // Actualiza la tabla de mapa de memoria con los bloques recibidos
+void MainWindow::updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks)
 {
-    memoryMapTable->setRowCount(0);
-    memoryMapTable->setRowCount(blocks.size());
+    qDebug() << "🔄 Actualizando Memory Map - Bloques recibidos:" << blocks.size();
 
-    for (int i = 0; i < blocks.size(); ++i)
+    // AGREGAR CADA BLOQUE INDIVIDUAL AL HISTORIAL
+    for (const auto &block : blocks)
     {
-        const auto &block = blocks[i];
+        addToMemoryMapHistory(block);
+    }
 
-        // Dirección (hexadecimal)
+    // ACTUALIZAR TABLA CON HISTORIAL COMPLETO
+    memoryMapTable->setRowCount(memoryMapHistory.size());
+
+    qDebug() << "📊 Llenando tabla con" << memoryMapHistory.size() << "filas";
+
+    for (int i = 0; i < memoryMapHistory.size(); ++i)
+    {
+        const auto &block = memoryMapHistory[i];
+
+        // CREAR ITEMS PARA CADA CELDA - ESTO ES CLAVE
         memoryMapTable->setItem(i, 0, new QTableWidgetItem(QString("0x%1").arg(block.address, 16, 16, QChar('0'))));
-
-        // Tamaño (formateado)
         memoryMapTable->setItem(i, 1, new QTableWidgetItem(formatMemorySize(block.size)));
-
-        // Tipo
         memoryMapTable->setItem(i, 2, new QTableWidgetItem(block.type));
-
-        // Estado
         memoryMapTable->setItem(i, 3, new QTableWidgetItem(block.state));
-
-        // Archivo:Linea
         memoryMapTable->setItem(i, 4, new QTableWidgetItem(QString("%1:%2").arg(block.filename).arg(block.line)));
 
-        // Aplicar color según estado
+        // APLICAR COLORES - ESTO DEBE EJECUTARSE
         colorTableRow(i, block.state);
     }
 
-    // Ajustar columnas al contenido
-    memoryMapTable->resizeColumnsToContents();
+    qDebug() << "✅ Tabla actualizada - Filas:" << memoryMapTable->rowCount();
 
-    qDebug() << "🗺️ Mapa de memoria actualizado - Bloques:" << blocks.size();
+    // FORZAR ACTUALIZACIÓN VISUAL
+    memoryMapTable->viewport()->update();
+    memoryMapTable->update();
 }
 
 //  Actualizar estadísticas de memoria
@@ -716,5 +684,82 @@ QString MainWindow::formatMemorySize(quint64 bytes)
     else
     {
         return QString("%1 MB").arg(bytes / (1024.0 * 1024.0), 0, 'f', 2);
+    }
+}
+//
+void MainWindow::colorTableRow(int row, const QString &state)
+{
+    QColor rowColor;
+    QColor textColor = Qt::black;
+
+    if (state == "active")
+    {
+        rowColor = QColor(200, 230, 255); // Azul claro
+        qDebug() << "🎨 Color AZUL para fila" << row << "- Estado: active";
+    }
+    else if (state == "freed")
+    {
+        rowColor = QColor(200, 255, 200); // Verde claro
+        qDebug() << "🎨 Color VERDE para fila" << row << "- Estado: freed";
+    }
+    else if (state == "leak")
+    {
+        rowColor = QColor(255, 200, 200); // Rojo claro
+        textColor = Qt::darkRed;
+        qDebug() << "🎨 Color ROJO para fila" << row << "- Estado: leak";
+    }
+    else
+    {
+        rowColor = QColor(240, 240, 240); // Gris por defecto
+    }
+
+    // APLICAR COLOR A TODAS LAS CELDAS DE LA FILA
+    for (int col = 0; col < memoryMapTable->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = memoryMapTable->item(row, col);
+        if (item)
+        {
+            item->setBackground(rowColor);
+            item->setForeground(textColor);
+        }
+        else
+        {
+            qDebug() << "⚠️ Item nulo en fila" << row << "columna" << col;
+        }
+    }
+}
+//
+void MainWindow::addToMemoryMapHistory(const MemoryMapTypes::BasicMemoryBlock &newBlock)
+{
+    // VERIFICAR SI EL BLOQUE YA EXISTE (POR DIRECCIÓN)
+    bool exists = false;
+    for (int i = 0; i < memoryMapHistory.size(); ++i)
+    {
+        if (memoryMapHistory[i].address == newBlock.address)
+        {
+            // ACTUALIZAR BLOQUE EXISTENTE
+            memoryMapHistory[i] = newBlock;
+            exists = true;
+            qDebug() << "✏️ Actualizando bloque existente - Addr: 0x"
+                     << QString::number(newBlock.address, 16);
+            break;
+        }
+    }
+
+    // SI ES NUEVO, AGREGARLO AL HISTORIAL
+    if (!exists)
+    {
+        memoryMapHistory.append(newBlock);
+        qDebug() << "➕ Nuevo bloque agregado - Addr: 0x"
+                 << QString::number(newBlock.address, 16)
+                 << "Estado:" << newBlock.state;
+    }
+
+    // MANTENER LÍMITE MÁXIMO
+    if (memoryMapHistory.size() > MAX_MEMORY_MAP_HISTORY)
+    {
+        int removed = memoryMapHistory.size() - MAX_MEMORY_MAP_HISTORY;
+        memoryMapHistory.remove(0, removed);
+        qDebug() << "🗑️ Eliminados" << removed << "bloques antiguos del historial";
     }
 }
