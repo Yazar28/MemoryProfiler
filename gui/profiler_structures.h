@@ -10,6 +10,17 @@
 // ================================
 // Estructuras para Vista General
 // ================================
+struct MemoryEvent
+{
+    quint64 address = 0;
+    quint64 size = 0;
+    QString type;
+    QString event_type; // "alloc", "free", "realloc"
+    QString filename;
+    int line = 0;
+    qint64 timestamp = 0;
+    QString stack_trace; // Opcional para debugging
+};
 
 struct GeneralMetrics // Métricas generales
 {
@@ -52,42 +63,47 @@ struct MemoryBlock
 // Estructuras Flexibles para Memory Map
 // ================================
 
-namespace MemoryMapTypes {
+namespace MemoryMapTypes
+{
 
-// 🎯 Versión básica para visualización (más eficiente)
-struct BasicMemoryBlock {
-    quint64 address;
-    quint64 size;
-    QString type;
-    QString state;
-    QString filename;
-    int line;
-};
+    // 🎯 Versión básica para visualización (más eficiente)
+    struct BasicMemoryBlock
+    {
+        quint64 address;
+        quint64 size;
+        QString type;
+        QString state;
+        QString filename;
+        int line;
+    };
 
-// 🎯 Versión extendida para análisis detallado
-struct DetailedMemoryBlock : public MemoryBlock {
-    quint64 allocationId = 0;
-    QString functionName;
-    QString callStack;
-    double memoryMB = 0.0;
+    // 🎯 Versión extendida para análisis detallado
+    struct DetailedMemoryBlock : public MemoryBlock
+    {
+        quint64 allocationId = 0;
+        QString functionName;
+        QString callStack;
+        double memoryMB = 0.0;
 
-    DetailedMemoryBlock() = default;
-    DetailedMemoryBlock(const MemoryBlock& block) : MemoryBlock(block) {
-        memoryMB = size / (1024.0 * 1024.0);
-    }
-};
+        DetailedMemoryBlock() = default;
+        DetailedMemoryBlock(const MemoryBlock &block) : MemoryBlock(block)
+        {
+            memoryMB = size / (1024.0 * 1024.0);
+        }
+    };
 
-// 🎯 Solo estadísticas (muy liviano)
-struct MemoryStats {
-    quint64 totalBlocks = 0;
-    quint64 activeBlocks = 0;
-    quint64 freedBlocks = 0;
-    quint64 leakedBlocks = 0;
-    double totalMemoryMB = 0.0;
-    double activeMemoryMB = 0.0;
-    double leakedMemoryMB = 0.0;
-    qint64 snapshotTime = 0;
-};
+    // 🎯 Solo estadísticas (muy liviano)
+    struct MemoryStats
+    {
+        quint64 totalBlocks = 0;
+        quint64 activeBlocks = 0;
+        quint64 freedBlocks = 0;
+        quint64 leakedBlocks = 0;
+        double totalMemoryMB = 0.0;
+        double activeMemoryMB = 0.0;
+        double leakedMemoryMB = 0.0;
+        qint64 snapshotTime = 0;
+    };
 
 } // namespace MemoryMapTypes
 
@@ -170,11 +186,7 @@ inline QDataStream &operator<<(QDataStream &stream, const GeneralMetrics &metric
 // Sobrecarga del operador >> para GeneralMetrics
 inline QDataStream &operator>>(QDataStream &stream, GeneralMetrics &metrics)
 {
-    stream >> metrics.currentUsageMB
-        >> metrics.activeAllocations
-        >> metrics.memoryLeaksMB
-        >> metrics.maxMemoryMB
-        >> metrics.totalAllocations;
+    stream >> metrics.currentUsageMB >> metrics.activeAllocations >> metrics.memoryLeaksMB >> metrics.maxMemoryMB >> metrics.totalAllocations;
     return stream;
 }
 
@@ -221,7 +233,7 @@ inline QDataStream &operator>>(QDataStream &stream, QVector<TopFile> &topFiles)
     quint32 size;
     stream >> size;
     topFiles.resize(size);
-    for (int i = 0; i < size; ++i)
+    for (quint32 i = 0; i < size; ++i)
         stream >> topFiles[i];
     return stream;
 }
@@ -234,21 +246,16 @@ inline QDataStream &operator<<(QDataStream &stream, const MemoryMapTypes::BasicM
            << block.type
            << block.state
            << block.filename
-           << quint32(block.line);  // Convertir int a quint32 para serialización
+           << quint32(block.line); // Convertir int a quint32 para serialización
     return stream;
 }
 
 // Sobrecarga del operador >> para MemoryMapTypes::BasicMemoryBlock
 inline QDataStream &operator>>(QDataStream &stream, MemoryMapTypes::BasicMemoryBlock &block)
 {
-    quint32 line;  // Variable temporal para la línea
-    stream >> block.address
-        >> block.size
-        >> block.type
-        >> block.state
-        >> block.filename
-        >> line;
-    block.line = line;  // Asignar de quint32 a int
+    quint32 line; // Variable temporal para la línea
+    stream >> block.address >> block.size >> block.type >> block.state >> block.filename >> line;
+    block.line = line; // Asignar de quint32 a int
     return stream;
 }
 
@@ -267,7 +274,7 @@ inline QDataStream &operator>>(QDataStream &stream, QVector<MemoryMapTypes::Basi
     quint32 size;
     stream >> size;
     blocks.resize(size);
-    for (int i = 0; i < size; ++i)
+    for (quint32 i = 0; i < size; ++i)
         stream >> blocks[i];
     return stream;
 }
@@ -289,14 +296,54 @@ inline QDataStream &operator<<(QDataStream &stream, const MemoryMapTypes::Memory
 // Sobrecarga del operador >> para MemoryMapTypes::MemoryStats
 inline QDataStream &operator>>(QDataStream &stream, MemoryMapTypes::MemoryStats &stats)
 {
-    stream >> stats.totalBlocks
-        >> stats.activeBlocks
-        >> stats.freedBlocks
-        >> stats.leakedBlocks
-        >> stats.totalMemoryMB
-        >> stats.activeMemoryMB
-        >> stats.leakedMemoryMB
-        >> stats.snapshotTime;
+    stream >> stats.totalBlocks >> stats.activeBlocks >> stats.freedBlocks >> stats.leakedBlocks >> stats.totalMemoryMB >> stats.activeMemoryMB >> stats.leakedMemoryMB >> stats.snapshotTime;
+    return stream;
+}
+
+// ================================
+// Serialización para MemoryEvent
+// ================================
+
+// Sobrecarga del operador << para MemoryEvent
+inline QDataStream &operator<<(QDataStream &stream, const MemoryEvent &event)
+{
+    stream << event.address
+           << event.size
+           << event.type
+           << event.event_type
+           << event.filename
+           << quint32(event.line)
+           << event.timestamp
+           << event.stack_trace;
+    return stream;
+}
+
+// Sobrecarga del operador >> para MemoryEvent
+inline QDataStream &operator>>(QDataStream &stream, MemoryEvent &event)
+{
+    quint32 line;
+    stream >> event.address >> event.size >> event.type >> event.event_type >> event.filename >> line >> event.timestamp >> event.stack_trace;
+    event.line = line;
+    return stream;
+}
+
+// Sobrecarga del operador << para QVector<MemoryEvent>
+inline QDataStream &operator<<(QDataStream &stream, const QVector<MemoryEvent> &events)
+{
+    stream << quint32(events.size());
+    for (const MemoryEvent &event : events)
+        stream << event;
+    return stream;
+}
+
+// Sobrecarga del operador >> para QVector<MemoryEvent>
+inline QDataStream &operator>>(QDataStream &stream, QVector<MemoryEvent> &events)
+{
+    quint32 size;
+    stream >> size;
+    events.resize(size);
+    for (quint32 i = 0; i < size; ++i)
+        stream >> events[i];
     return stream;
 }
 

@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(listenLogic, &ListenLogic::topFilesUpdated, this, &MainWindow::updateTopFile);
     connect(listenLogic, &ListenLogic::basicMemoryMapUpdated, this, &MainWindow::updateMemoryMap);
     connect(listenLogic, &ListenLogic::memoryStatsUpdated, this, &MainWindow::updateMemoryStats);
-
+    connect(listenLogic, &ListenLogic::memoryEventReceived, this, &MainWindow::onMemoryEventReceived);
     // INICIALIZAR PUNTEROS DE GRÁFICOS
     timelineChart = nullptr;
     timelineSeries = nullptr;
@@ -687,48 +687,6 @@ QString MainWindow::formatMemorySize(quint64 bytes)
     }
 }
 //
-void MainWindow::colorTableRow(int row, const QString &state)
-{
-    QColor rowColor;
-    QColor textColor = Qt::black;
-
-    if (state == "active")
-    {
-        rowColor = QColor(200, 230, 255); // Azul claro
-        qDebug() << "🎨 Color AZUL para fila" << row << "- Estado: active";
-    }
-    else if (state == "freed")
-    {
-        rowColor = QColor(200, 255, 200); // Verde claro
-        qDebug() << "🎨 Color VERDE para fila" << row << "- Estado: freed";
-    }
-    else if (state == "leak")
-    {
-        rowColor = QColor(255, 200, 200); // Rojo claro
-        textColor = Qt::darkRed;
-        qDebug() << "🎨 Color ROJO para fila" << row << "- Estado: leak";
-    }
-    else
-    {
-        rowColor = QColor(240, 240, 240); // Gris por defecto
-    }
-
-    // APLICAR COLOR A TODAS LAS CELDAS DE LA FILA
-    for (int col = 0; col < memoryMapTable->columnCount(); ++col)
-    {
-        QTableWidgetItem *item = memoryMapTable->item(row, col);
-        if (item)
-        {
-            item->setBackground(rowColor);
-            item->setForeground(textColor);
-        }
-        else
-        {
-            qDebug() << "⚠️ Item nulo en fila" << row << "columna" << col;
-        }
-    }
-}
-//
 void MainWindow::addToMemoryMapHistory(const MemoryMapTypes::BasicMemoryBlock &newBlock)
 {
     // VERIFICAR SI EL BLOQUE YA EXISTE (POR DIRECCIÓN)
@@ -761,5 +719,88 @@ void MainWindow::addToMemoryMapHistory(const MemoryMapTypes::BasicMemoryBlock &n
         int removed = memoryMapHistory.size() - MAX_MEMORY_MAP_HISTORY;
         memoryMapHistory.remove(0, removed);
         qDebug() << "🗑️ Eliminados" << removed << "bloques antiguos del historial";
+    }
+}
+void MainWindow::onMemoryEventReceived(const MemoryEvent &event)
+{
+    addMemoryEvent(event);
+    updateMemoryEventsTable();
+}
+
+void MainWindow::addMemoryEvent(const MemoryEvent &event)
+{
+    memoryEvents.append(event);
+
+    // Mantener límite máximo
+    if (memoryEvents.size() > MAX_MEMORY_EVENTS)
+    {
+        memoryEvents.removeFirst();
+    }
+
+    qDebug() << "📝 Evento agregado - Tipo:" << event.event_type
+             << "Addr: 0x" << QString::number(event.address, 16)
+             << "Total eventos:" << memoryEvents.size();
+}
+
+void MainWindow::updateMemoryEventsTable()
+{
+    // Actualizar la tabla existente de Memory Map con eventos
+    memoryMapTable->setRowCount(memoryEvents.size());
+
+    for (int i = 0; i < memoryEvents.size(); ++i)
+    {
+        const auto &event = memoryEvents[i];
+
+        // Crear items para cada celda
+        memoryMapTable->setItem(i, 0, new QTableWidgetItem(QString("0x%1").arg(event.address, 16, 16, QChar('0'))));
+        memoryMapTable->setItem(i, 1, new QTableWidgetItem(formatMemorySize(event.size)));
+        memoryMapTable->setItem(i, 2, new QTableWidgetItem(event.type));
+        memoryMapTable->setItem(i, 3, new QTableWidgetItem(event.event_type)); // Event type instead of state
+        memoryMapTable->setItem(i, 4, new QTableWidgetItem(QString("%1:%2").arg(event.filename).arg(event.line)));
+
+        // Aplicar colores según el tipo de evento
+        colorTableRow(i, event.event_type);
+    }
+
+    // Scroll automático al final para ver los eventos más recientes
+    memoryMapTable->scrollToBottom();
+
+    qDebug() << "🔄 Tabla de eventos actualizada - Eventos:" << memoryEvents.size();
+}
+// Modificar colorTableRow para manejar tipos de evento
+void MainWindow::colorTableRow(int row, const QString &eventType)
+{
+    QColor rowColor;
+    QColor textColor = Qt::black;
+
+    if (eventType == "alloc")
+    {
+        rowColor = QColor(200, 255, 200); // Verde claro para asignaciones
+        qDebug() << "🎨 Color VERDE para fila" << row << "- Evento: alloc";
+    }
+    else if (eventType == "free")
+    {
+        rowColor = QColor(255, 255, 200); // Amarillo claro para liberaciones
+        qDebug() << "🎨 Color AMARILLO para fila" << row << "- Evento: free";
+    }
+    else if (eventType == "realloc")
+    {
+        rowColor = QColor(200, 200, 255); // Azul claro para reasignaciones
+        qDebug() << "🎨 Color AZUL para fila" << row << "- Evento: realloc";
+    }
+    else
+    {
+        rowColor = QColor(255, 0, 0); // Rojo por defecto
+    }
+
+    // Aplicar color a todas las celdas de la fila
+    for (int col = 0; col < memoryMapTable->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = memoryMapTable->item(row, col);
+        if (item)
+        {
+            item->setBackground(rowColor);
+            item->setForeground(textColor);
+        }
     }
 }

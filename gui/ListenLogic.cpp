@@ -41,6 +41,11 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
         handleMemoryStats(data);
         return;
     }
+    if (keyword == "MEMORY_EVENT")
+    {
+        handleMemoryEvent(data);
+        return;
+    }
     //  MOVER ESTO AL PRINCIPIO - Para otros keywords, procesar como string con separadores '|'
     QString dataStr = QString::fromUtf8(data);
     QStringList parts = dataStr.split('|');
@@ -325,4 +330,26 @@ QString ListenLogic::bytesToMB(quint64 bytes)
 QString ListenLogic::formatAddress(quint64 addr)
 {
     return QString("0x%1").arg(addr, 16, 16, QChar('0'));
+}
+void ListenLogic::handleMemoryEvent(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    MemoryEvent event;
+    stream >> event;
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "🎯 MEMORY_EVENT recibido - Tipo:" << event.event_type
+                 << "Addr: 0x" << QString::number(event.address, 16)
+                 << "Size:" << event.size
+                 << "File:" << event.filename << ":" << event.line;
+
+        emit memoryEventReceived(event);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando MemoryEvent";
+    }
 }

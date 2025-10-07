@@ -85,9 +85,99 @@ void Client::onDisconnected() // Ranura llamada cuando se pierde la conexión
     qDebug() << "Client: ✓ Evento - Desconectado del servidor";
     emit disconnected(); // Emitir señal de desconexión
 }
-void Client::onError(QAbstractSocket::SocketError error) //
+void Client::onError(QAbstractSocket::SocketError error)
+
 {
     QString errorStr = socket->errorString();             // Obtener la descripción del error
     qDebug() << "Client: ✗ Error de socket:" << errorStr; // Mostrar el error
     emit errorOccurred(errorStr);                         // Emitir señal de error
+}
+void Client::sendGeneralMetrics(const GeneralMetrics &metrics)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar GENERAL_METRICS";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << metrics;
+    sendSerialized("GENERAL_METRICS", byteArray);
+    qDebug() << "Client: ✓ GENERAL_METRICS enviado";
+}
+
+void Client::sendTimelinePoint(const TimelinePoint &point)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar TIMELINE_POINT";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << point;
+    sendSerialized("TIMELINE_POINT", byteArray);
+    qDebug() << "Client: ✓ TIMELINE_POINT enviado";
+}
+
+void Client::sendTopFiles(const QVector<TopFile> &topFiles)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar TOP_FILES";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << topFiles;
+    sendSerialized("TOP_FILES", byteArray);
+    qDebug() << "Client: ✓ TOP_FILES enviado";
+}
+
+void Client::sendBasicMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar BASIC_MEMORY_MAP";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << blocks;
+    sendSerialized("BASIC_MEMORY_MAP", byteArray);
+    qDebug() << "Client: ✓ BASIC_MEMORY_MAP enviado";
+}
+
+void Client::sendMemoryStats(const MemoryMapTypes::MemoryStats &stats)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar MEMORY_STATS";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << stats;
+    sendSerialized("MEMORY_STATS", byteArray);
+    qDebug() << "Client: ✓ MEMORY_STATS enviado";
+}
+
+void Client::sendMemoryEvent(const MemoryEvent &event)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar MEMORY_EVENT";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << event;
+    sendSerialized("MEMORY_EVENT", byteArray);
+    qDebug() << "Client: ✓ MEMORY_EVENT enviado";
 }
