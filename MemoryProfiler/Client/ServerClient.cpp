@@ -166,7 +166,20 @@ void Client::sendMemoryStats(const MemoryMapTypes::MemoryStats &stats)
     sendSerialized("MEMORY_STATS", byteArray);
     qDebug() << "Client: ✓ MEMORY_STATS enviado";
 }
-
+void Client::sendFileAllocationSummary(const QVector<FileAllocationSummary> &fileAllocs)
+{
+    if (!isConnected())
+    {
+        qDebug() << "Client: No conectado, no se puede enviar FILE_ALLOCATION_SUMMARY";
+        return;
+    }
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << fileAllocs;
+    sendSerialized("FILE_ALLOCATION_SUMMARY", byteArray);
+    qDebug() << "Client: ✓ FILE_ALLOCATION_SUMMARY enviado - Archivos:" << fileAllocs.size();
+}
 void Client::sendMemoryEvent(const MemoryEvent &event)
 {
     if (!isConnected())

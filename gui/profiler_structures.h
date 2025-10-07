@@ -77,7 +77,7 @@ namespace MemoryMapTypes
         int line;
     };
 
-    // 🎯 Versión extendida para análisis detallado
+    //  Versión extendida para análisis detallado
     struct DetailedMemoryBlock : public MemoryBlock
     {
         quint64 allocationId = 0;
@@ -92,7 +92,7 @@ namespace MemoryMapTypes
         }
     };
 
-    // 🎯 Solo estadísticas (muy liviano)
+    // Solo estadísticas (muy liviano)
     struct MemoryStats
     {
         quint64 totalBlocks = 0;
@@ -118,10 +118,62 @@ struct FileAllocation // Asignación de memoria por archivo
     double memoryMB = 0.0;       // representa la memoria total asignada por este archivo en MB
 };
 
+// En profiler_structures.h, agregar después de FileAllocation:
+
+struct FileAllocationSummary
+{
+    QString filename;
+    quint64 allocationCount = 0;
+    quint64 totalMemoryBytes = 0;
+    quint64 leakCount = 0;
+    quint64 leakedMemoryBytes = 0;
+    double memoryMB = 0.0;
+    double leakedMemoryMB = 0.0;
+};
+
+// Serialización para FileAllocationSummary
+inline QDataStream &operator<<(QDataStream &stream, const FileAllocationSummary &fileAlloc)
+{
+    stream << fileAlloc.filename
+           << fileAlloc.allocationCount
+           << fileAlloc.totalMemoryBytes
+           << fileAlloc.leakCount
+           << fileAlloc.leakedMemoryBytes;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, FileAllocationSummary &fileAlloc)
+{
+    stream >> fileAlloc.filename >> fileAlloc.allocationCount >> fileAlloc.totalMemoryBytes >> fileAlloc.leakCount >> fileAlloc.leakedMemoryBytes;
+
+    // Calcular MB
+    fileAlloc.memoryMB = fileAlloc.totalMemoryBytes / (1024.0 * 1024.0);
+    fileAlloc.leakedMemoryMB = fileAlloc.leakedMemoryBytes / (1024.0 * 1024.0);
+
+    return stream;
+}
+
+// Serialización para QVector<FileAllocationSummary>
+inline QDataStream &operator<<(QDataStream &stream, const QVector<FileAllocationSummary> &fileAllocs)
+{
+    stream << quint32(fileAllocs.size());
+    for (const FileAllocationSummary &fileAlloc : fileAllocs)
+        stream << fileAlloc;
+    return stream;
+}
+
+inline QDataStream &operator>>(QDataStream &stream, QVector<FileAllocationSummary> &fileAllocs)
+{
+    quint32 size;
+    stream >> size;
+    fileAllocs.resize(size);
+    for (quint32 i = 0; i < size; ++i)
+        stream >> fileAllocs[i];
+    return stream;
+}
 // ================================
 // Estructuras para Memory Leaks
 // ================================
-
 struct LeakSummary // Resumen de pérdidas de memoria
 {
     double totalLeakedMB = 0.0;   // Memoria total perdida en MB
@@ -130,25 +182,21 @@ struct LeakSummary // Resumen de pérdidas de memoria
     QString mostFrequentLeakFile; // Archivo con más pérdidas
     double leakRate = 0.0;        // Porcentaje
 };
-
 struct LeakByFile // Pérdidas de memoria por archivo
 {
     QString filename;      // representa el nombre del archivo
     double leakedMB = 0.0; // representa la memoria perdida en MB por este archivo
     quint64 leakCount = 0; // representa el número de pérdidas de memoria en este archivo
 };
-
 struct LeakTimelinePoint // Punto en la línea de tiempo de pérdidas de memoria
 {
     qint64 timestamp;  // representa la marca de tiempo en milisegundos desde epoch
     double leakedMB;   // representa la memoria perdida en MB en este punto de tiempo
     quint64 leakCount; // representa el número de pérdidas de memoria en este punto de tiempo
 };
-
 // ================================
 // Estructuras de Comunicación
 // ================================
-
 struct ProfilerData // Estructura principal que contiene todos los datos del profiler
 {
     // Vista General
@@ -167,11 +215,9 @@ struct ProfilerData // Estructura principal que contiene todos los datos del pro
     QVector<LeakByFile> leaksByFile;         // Pérdidas de memoria por archivo
     QVector<LeakTimelinePoint> leakTimeline; // Línea de tiempo de pérdidas de memoria
 };
-
 // ================================
 // Serializaciones
 // ================================
-
 // Sobrecarga del operador << para GeneralMetrics
 inline QDataStream &operator<<(QDataStream &stream, const GeneralMetrics &metrics)
 {
@@ -182,28 +228,24 @@ inline QDataStream &operator<<(QDataStream &stream, const GeneralMetrics &metric
            << metrics.totalAllocations;
     return stream;
 }
-
 // Sobrecarga del operador >> para GeneralMetrics
 inline QDataStream &operator>>(QDataStream &stream, GeneralMetrics &metrics)
 {
     stream >> metrics.currentUsageMB >> metrics.activeAllocations >> metrics.memoryLeaksMB >> metrics.maxMemoryMB >> metrics.totalAllocations;
     return stream;
 }
-
 // Sobrecarga del operador << para TimelinePoint
 inline QDataStream &operator<<(QDataStream &stream, const TimelinePoint &point)
 {
     stream << point.timestamp << point.memoryMB;
     return stream;
 }
-
 // Sobrecarga del operador >> para TimelinePoint
 inline QDataStream &operator>>(QDataStream &stream, TimelinePoint &point)
 {
     stream >> point.timestamp >> point.memoryMB;
     return stream;
 }
-
 // Sobrecarga del operador << para TopFile
 inline QDataStream &operator<<(QDataStream &stream, const TopFile &topFile)
 {

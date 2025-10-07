@@ -26,6 +26,8 @@ public:
     void sendBasicMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks);
     void sendMemoryStats(const MemoryMapTypes::MemoryStats &stats);
     void sendMemoryEvent(const MemoryEvent &event);
+    // En la clase Client en ServerClient.h, agregar:
+    void sendFileAllocationSummary(const QVector<FileAllocationSummary> &fileAllocs);
 signals:                                    // los singnals son señales que emite el objeto para notificar eventos
     void connected();                       // Emitida cuando se establece la conexión
     void disconnected();                    // Emitida cuando se pierde la conexión

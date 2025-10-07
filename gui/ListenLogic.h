@@ -25,18 +25,21 @@ signals:                                                                        
     void timelinePointUpdated(const TimelinePoint &point);                               // señal para actualizar el timeline
     void topFilesUpdated(const QVector<TopFile> &topFiles);                              // señal para actualizar los archivos principales
     void basicMemoryMapUpdated(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks); // señal para actualizar el mapa de memoria básico
-    void memoryStatsUpdated(const MemoryMapTypes::MemoryStats &stats);
-    void memoryEventReceived(const MemoryEvent &event); // Nueva señal para eventos individua         // señal para actualizar las estadísticas de memoria
+    void memoryStatsUpdated(const MemoryMapTypes::MemoryStats &stats);                   //
+    void memoryEventReceived(const MemoryEvent &event);                                  // Nueva señal para eventos individua
+    void fileAllocationSummaryUpdated(const QVector<FileAllocationSummary> &fileAllocs); //
+
 private:
     // Manejadores para diferentes tipos de datos
-    void handleLiveUpdate(const QStringList &parts);      // Maneja actualizaciones en vivo (formato Qstring)
-    void handleGeneralMetrics(const QByteArray &data);    // Sobrecarga del operador >> para deserializar GeneralMetrics
-    void handleMemoryMap(const QStringList &parts);       // Maneja el mapa de memoria (formato QString)
-    void handleFileAllocations(const QStringList &parts); // Maneja las asignaciones por archivo (formato QString)
-    void handleLeakReport(const QStringList &parts);      // Maneja el informe de fugas (formato QString)
-    void handleTimelinePoint(const QByteArray &data);     // Maneja un punto de la línea de tiempo (estructura binaria)
-    void handleTopFile(const QByteArray &data);           // Sobrecarga del operador >> para deserializar TopFile
-    void handleBasicMemoryMap(const QByteArray &data);    // Maneja el mapa de memoria básico (estructura binaria)
-    void handleMemoryStats(const QByteArray &data);       // Maneja las estadísticas de memoria (estructura binaria)
-    void handleMemoryEvent(const QByteArray &data);
+    void handleLiveUpdate(const QStringList &parts);          // Maneja actualizaciones en vivo (formato Qstring)
+    void handleGeneralMetrics(const QByteArray &data);        // Sobrecarga del operador >> para deserializar GeneralMetrics
+    void handleMemoryMap(const QStringList &parts);           // Maneja el mapa de memoria (formato QString)
+    void handleFileAllocations(const QStringList &parts);     // Maneja las asignaciones por archivo (formato QString)
+    void handleLeakReport(const QStringList &parts);          // Maneja el informe de fugas (formato QString)
+    void handleTimelinePoint(const QByteArray &data);         // Maneja un punto de la línea de tiempo (estructura binaria)
+    void handleTopFile(const QByteArray &data);               // Sobrecarga del operador >> para deserializar TopFile
+    void handleBasicMemoryMap(const QByteArray &data);        // Maneja el mapa de memoria básico (estructura binaria)
+    void handleMemoryStats(const QByteArray &data);           // Maneja las estadísticas de memoria (estructura binaria)
+    void handleMemoryEvent(const QByteArray &data);           //
+    void handleFileAllocationSummary(const QByteArray &data); //
 };

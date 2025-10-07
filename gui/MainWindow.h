@@ -23,6 +23,26 @@
 #include "profiler_structures.h"
 #include <QLineSeries>
 #include <QValueAxis>
+#include <QBarSeries>
+#include <QPieSeries>
+#include <QGroupBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QSplitter>
+#include <QTableWidget>
+#include <QLabel>
+#include <QChartView>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QStackedWidget>
+#include <QStatusBar>
+#include <QMessageBox>
+#include <QDataStream>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QBarSet>
 
 class MainWindow : public QMainWindow // declaracion de la clase MainWindow que hereda de QMainWindow
 {
@@ -35,15 +55,16 @@ Q_OBJECT                                                     // macro necesaria 
     // espacio privado los slots de la clase
 private slots:
     void updateGeneralMetrics(const GeneralMetrics &metrics);
-    void onStartServerClicked();                                                   // slot para manejar el click en el boton de iniciar servidor
-    void onNewConnection();                                                        // slot para manejar una nueva conexion
-    void onClientDisconnected();                                                   // slot para manejar la desconexion de un cliente
-    void onReadyRead();                                                            // slot para manejar la lectura de datos entrantes
-    void updateTopFile(const QVector<TopFile> &topFiles);                          // slot para actualizar la tabla de archivos principales
-    void updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks); // slot para actualizar el mapa de memoria
-    void updateMemoryStats(const MemoryMapTypes::MemoryStats &stats);              // slot para actualizar las estadisticas de memoria
-    void updateTimelineChart(const TimelinePoint &point);                          // slot para actualizar el grafico de la linea de tiempo
-    void onMemoryEventReceived(const MemoryEvent &event);                          // Nuevo slot para eventos
+    void onStartServerClicked();                                                        // slot para manejar el click en el boton de iniciar servidor
+    void onNewConnection();                                                             // slot para manejar una nueva conexion
+    void onClientDisconnected();                                                        // slot para manejar la desconexion de un cliente
+    void onReadyRead();                                                                 // slot para manejar la lectura de datos entrantes
+    void updateTopFile(const QVector<TopFile> &topFiles);                               // slot para actualizar la tabla de archivos principales
+    void updateMemoryMap(const QVector<MemoryMapTypes::BasicMemoryBlock> &blocks);      // slot para actualizar el mapa de memoria
+    void updateMemoryStats(const MemoryMapTypes::MemoryStats &stats);                   // slot para actualizar las estadisticas de memoria
+    void updateTimelineChart(const TimelinePoint &point);                               // slot para actualizar el grafico de la linea de tiempo
+    void onMemoryEventReceived(const MemoryEvent &event);                               // Nuevo slot para eventos
+    void updateFileAllocationSummary(const QVector<FileAllocationSummary> &fileAllocs); //
 private:
     // Historial de eventos de memoria (nunca se limpia)
     QVector<MemoryEvent> memoryEventsHistory;
@@ -54,6 +75,7 @@ private:
     void updateMemoryEventsHistoryTable();
     QVector<MemoryEvent> memoryEvents;
     const int MAX_MEMORY_EVENTS = 2000;
+    const int MAX_ALLOCATION_FILES = 20;
     void addMemoryEvent(const MemoryEvent &event);
     void updateMemoryEventsTable();
     QVector<MemoryMapTypes::BasicMemoryBlock> memoryMapHistory;
@@ -121,6 +143,12 @@ private:
     QChartView *leaksByFileChartView;       // vista del grafico de fugas por archivo
     QChartView *leaksDistributionChartView; // vista del grafico de distribucion de fugas
     QChartView *leaksTimelineChartView;     // vista del grafico de la linea de tiempo de fugas
+    // Para Allocation by File Tab
+    QPieSeries *allocationPieSeries;
+    QChart *allocationChart;
+    QBarSeries *allocationBarSeries;
+    QChart *allocationBarChart;
+    QSplitter *allocationSplitter;
 };
 
 #endif // end of MAINWINDOW_H sirve para evitar multiples inclusiones archivos que no lo utilizan

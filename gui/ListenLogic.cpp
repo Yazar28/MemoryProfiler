@@ -46,6 +46,11 @@ void ListenLogic::processData(const QString &keyword, const QByteArray &data)
         handleMemoryEvent(data);
         return;
     }
+    if (keyword == "FILE_ALLOCATION_SUMMARY")
+    {
+        handleFileAllocationSummary(data);
+        return;
+    }
     //  MOVER ESTO AL PRINCIPIO - Para otros keywords, procesar como string con separadores '|'
     QString dataStr = QString::fromUtf8(data);
     QStringList parts = dataStr.split('|');
@@ -351,5 +356,31 @@ void ListenLogic::handleMemoryEvent(const QByteArray &data)
     else
     {
         qDebug() << "✗ Error deserializando MemoryEvent";
+    }
+}
+void ListenLogic::handleFileAllocationSummary(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    QVector<FileAllocationSummary> fileAllocs;
+    quint32 size;
+    stream >> size;
+
+    for (quint32 i = 0; i < size; ++i)
+    {
+        FileAllocationSummary fileAlloc;
+        stream >> fileAlloc;
+        fileAllocs.append(fileAlloc);
+    }
+
+    if (stream.status() == QDataStream::Ok)
+    {
+        qDebug() << "✓ FileAllocationSummary recibido - Archivos:" << fileAllocs.size();
+        emit fileAllocationSummaryUpdated(fileAllocs);
+    }
+    else
+    {
+        qDebug() << "✗ Error deserializando FileAllocationSummary";
     }
 }

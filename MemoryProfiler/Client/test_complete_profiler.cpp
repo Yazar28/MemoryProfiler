@@ -20,6 +20,7 @@ int timelineCount = 0;
 int topFilesCount = 0;
 int memoryMapCount = 0;
 int totalSeconds = 0;
+int fileAllocSummaryCount = 0; // 🆕 Contador de envíos de FILE_ALLOCATION_SUMMARY
 
 // Lista de archivos para TopFiles
 QVector<QString> allFiles = {
@@ -109,7 +110,8 @@ void exitContext(int contextId)
                             forcedLeaksCreated++;
 
                             // 🆕 ENVIAR EVENTO DE LEAK ESPECÍFICO
-                            if (globalClient) {
+                            if (globalClient)
+                            {
                                 MemoryEvent leakEvent;
                                 leakEvent.address = block.address;
                                 leakEvent.size = block.size;
@@ -181,9 +183,12 @@ void sendGeneralMetrics()
 
     for (const auto &block : memoryBlocks)
     {
-        if (block.state == "active") {
+        if (block.state == "active")
+        {
             activeBlocks++;
-        } else if (block.state == "leak") { // 🆕 CAMBIO: "leak" en lugar de "leaked"
+        }
+        else if (block.state == "leak")
+        { // 🆕 CAMBIO: "leak" en lugar de "leaked"
             leakedBlocks++;
             leakedMemoryMB += block.size / (1024.0 * 1024.0);
         }
@@ -301,13 +306,18 @@ void sendMemoryEvent(const QString &eventType, quint64 address, quint64 size, co
 
     globalClient->sendMemoryEvent(event);
 
-    if (eventType == "alloc") {
+    if (eventType == "alloc")
+    {
         qDebug() << "🟢 ALLOC - Addr: 0x" << QString::number(address, 16)
                  << "Size:" << size << "bytes -" << filename << ":" << line;
-    } else if (eventType == "free") {
+    }
+    else if (eventType == "free")
+    {
         qDebug() << "🔵 FREE  - Addr: 0x" << QString::number(address, 16)
                  << "Size:" << size << "bytes";
-    } else if (eventType == "leak") {
+    }
+    else if (eventType == "leak")
+    {
         qDebug() << "🔴🆕 LEAK EVENT - Addr: 0x" << QString::number(address, 16)
                  << "Size:" << size << "bytes -" << filename << ":" << line;
     }
@@ -333,6 +343,47 @@ void sendLeakEvent(quint64 address, quint64 size, const QString &filename, int l
 
     qDebug() << "🔴🎯 EVENTO LEAK ENVIADO - Addr: 0x" << QString::number(address, 16)
              << "Size:" << size << "bytes -" << filename << ":" << line;
+}
+
+// 🆕 NUEVA FUNCIÓN: Enviar resumen de asignación por archivo
+void sendFileAllocationSummaryTest()
+{
+    if (!globalClient)
+        return;
+
+    fileAllocSummaryCount++;
+
+    QVector<FileAllocationSummary> fileAllocs;
+
+    // Datos de ejemplo realistas - variar ligeramente en cada llamada
+    QStringList testFiles = {
+        "renderer.cpp", "physics_engine.cpp", "main.cpp",
+        "network_manager.cpp", "asset_loader.cpp", "ui_manager.cpp",
+        "audio_system.cpp", "shader_compiler.cpp", "utils.cpp",
+        "memory_manager.cpp", "file_system.cpp", "input_handler.cpp"};
+
+    for (int i = 0; i < testFiles.size(); ++i)
+    {
+        FileAllocationSummary alloc;
+        alloc.filename = testFiles[i];
+
+        // Variar los datos ligeramente en cada llamada para simular cambios
+        int variation = QRandomGenerator::global()->bounded(100);
+        alloc.allocationCount = 1000 + (i * 500) + variation + (fileAllocSummaryCount * 10);
+        alloc.totalMemoryBytes = (50 + (i * 25) + variation + (fileAllocSummaryCount * 2)) * 1024 * 1024;
+        alloc.leakCount = (i % 3 == 0) ? (10 + QRandomGenerator::global()->bounded(50) + (fileAllocSummaryCount % 5)) : 0;
+        alloc.leakedMemoryBytes = alloc.leakCount * (1024 * 1024) + QRandomGenerator::global()->bounded(5 * 1024 * 1024);
+
+        // Calcular MB
+        alloc.memoryMB = alloc.totalMemoryBytes / (1024.0 * 1024.0);
+        alloc.leakedMemoryMB = alloc.leakedMemoryBytes / (1024.0 * 1024.0);
+
+        fileAllocs.append(alloc);
+    }
+
+    globalClient->sendFileAllocationSummary(fileAllocs);
+    qDebug() << "📁 FILE_ALLOCATION_SUMMARY enviado - Archivos:" << fileAllocs.size()
+             << "(llamada #" << fileAllocSummaryCount << ")";
 }
 
 void sendMemoryMap()
@@ -376,19 +427,23 @@ void sendMemoryMap()
 
         qDebug() << "🆕 NUEVA ASIGNACIÓN - Total activas:"
                  << std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                  [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
+                                  [](const MemoryMapTypes::BasicMemoryBlock &b)
+                                  { return b.state == "active"; });
     }
     else if (actionType < 75 && !memoryBlocks.isEmpty()) // 🔴 15% de liberaciones
     {
         // Liberación - SOLO si hay suficientes bloques activos
         QVector<int> activeIndices;
-        for (int i = 0; i < memoryBlocks.size(); ++i) {
-            if (memoryBlocks[i].state == "active") {
+        for (int i = 0; i < memoryBlocks.size(); ++i)
+        {
+            if (memoryBlocks[i].state == "active")
+            {
                 activeIndices.append(i);
             }
         }
 
-        if (!activeIndices.isEmpty()) {
+        if (!activeIndices.isEmpty())
+        {
             int randomIndex = QRandomGenerator::global()->bounded(activeIndices.size());
             int blockIndex = activeIndices[randomIndex];
             auto &block = memoryBlocks[blockIndex];
@@ -399,20 +454,24 @@ void sendMemoryMap()
 
             qDebug() << "🗑️  BLOQUE LIBERADO - Quedan activas:"
                      << std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                      [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
+                                      [](const MemoryMapTypes::BasicMemoryBlock &b)
+                                      { return b.state == "active"; });
         }
     }
     else if (actionType < 85 && !memoryBlocks.isEmpty())
     {
         // 10%: Reasignación
         QVector<int> activeIndices;
-        for (int i = 0; i < memoryBlocks.size(); ++i) {
-            if (memoryBlocks[i].state == "active") {
+        for (int i = 0; i < memoryBlocks.size(); ++i)
+        {
+            if (memoryBlocks[i].state == "active")
+            {
                 activeIndices.append(i);
             }
         }
 
-        if (!activeIndices.isEmpty()) {
+        if (!activeIndices.isEmpty())
+        {
             int randomIndex = QRandomGenerator::global()->bounded(activeIndices.size());
             int blockIndex = activeIndices[randomIndex];
             auto &block = memoryBlocks[blockIndex];
@@ -428,15 +487,19 @@ void sendMemoryMap()
     else
     {
         // 🔴 15%: CREAR LEAK DIRECTO
-        if (!memoryBlocks.isEmpty()) {
+        if (!memoryBlocks.isEmpty())
+        {
             QVector<int> activeIndices;
-            for (int i = 0; i < memoryBlocks.size(); ++i) {
-                if (memoryBlocks[i].state == "active") {
+            for (int i = 0; i < memoryBlocks.size(); ++i)
+            {
+                if (memoryBlocks[i].state == "active")
+                {
                     activeIndices.append(i);
                 }
             }
 
-            if (!activeIndices.isEmpty()) {
+            if (!activeIndices.isEmpty())
+            {
                 int randomIndex = QRandomGenerator::global()->bounded(activeIndices.size());
                 int blockIndex = activeIndices[randomIndex];
                 auto &block = memoryBlocks[blockIndex];
@@ -462,11 +525,14 @@ void sendMemoryMap()
         globalClient->sendBasicMemoryMap(memoryBlocks);
 
         int active = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "active"; });
+                                   [](const MemoryMapTypes::BasicMemoryBlock &b)
+                                   { return b.state == "active"; });
         int leaked = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                   [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
+                                   [](const MemoryMapTypes::BasicMemoryBlock &b)
+                                   { return b.state == "leak"; }); // 🆕 CAMBIO: "leak"
         int freed = std::count_if(memoryBlocks.begin(), memoryBlocks.end(),
-                                  [](const MemoryMapTypes::BasicMemoryBlock& b) { return b.state == "freed"; });
+                                  [](const MemoryMapTypes::BasicMemoryBlock &b)
+                                  { return b.state == "freed"; });
 
         qDebug() << "📦 Snapshot completo - Activas:" << active
                  << "Leaks:" << leaked << "Liberadas:" << freed;
@@ -515,6 +581,7 @@ int main(int argc, char *argv[])
     qDebug() << "   - TIMELINE_POINT     cada 1 segundo";
     qDebug() << "   - TOP_FILES          cada 5 segundos";
     qDebug() << "   - BASIC_MEMORY_MAP   cada 3 segundos";
+    qDebug() << "   - FILE_ALLOC_SUMMARY cada 7 segundos"; // 🆕 AGREGAR ESTA LÍNEA
     qDebug() << "   - CAMBIO CONTEXTO    cada 8 segundos";
     qDebug() << "";
 
@@ -546,6 +613,11 @@ int main(int argc, char *argv[])
                          // Enviar MemoryMap cada 3 segundos
                          if (totalSeconds % 3 == 0) {
                              sendMemoryMap();
+                         }
+
+                         // 🆕 ENVIAR FILE_ALLOCATION_SUMMARY cada 7 segundos
+                         if (totalSeconds % 7 == 0) {
+                             sendFileAllocationSummaryTest();
                          }
 
                          // Cambiar de contexto cada 8 segundos - DETECCIÓN DE LEAKS
@@ -588,6 +660,7 @@ int main(int argc, char *argv[])
                              qDebug() << "   - TIMELINE_POINT:    " << timelineCount;
                              qDebug() << "   - TOP_FILES:         " << topFilesCount;
                              qDebug() << "   - BASIC_MEMORY_MAP:  " << memoryMapCount;
+                             qDebug() << "   - FILE_ALLOC_SUMMARY: " << fileAllocSummaryCount; // 🆕 Mostrar cuántas veces se envió
                              qDebug() << "================================================";
                              qDebug() << "🎯 RESULTADO: " << (finalActive + finalLeaked) << "LEAKS VISIBLES EN GUI 🎯";
 
@@ -606,6 +679,7 @@ int main(int argc, char *argv[])
                            sendTimelinePoint();
                            sendTopFiles();
                            sendMemoryMap();
+                           sendFileAllocationSummaryTest(); // 🆕 AGREGAR EN ENVÍO INICIAL
 
                            // Iniciar timer principal
                            mainTimer.start(1000); });

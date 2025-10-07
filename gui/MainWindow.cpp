@@ -1,23 +1,8 @@
 // uso de librerias y archivos externos
 #include "mainwindow.h"
-#include <QGroupBox>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QHeaderView>
-#include <QSplitter>
-#include <QTableWidget>
-#include <QLabel>
-#include <QChartView>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QStackedWidget>
-#include <QStatusBar>
-#include <QMessageBox>
-#include <QDataStream>
 #include "ListenLogic.h"
 #include "profiler_structures.h"
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QValueAxis>
+
 // Constructor de la clase MainWindow
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -32,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(listenLogic, &ListenLogic::basicMemoryMapUpdated, this, &MainWindow::updateMemoryMap);
     connect(listenLogic, &ListenLogic::memoryStatsUpdated, this, &MainWindow::updateMemoryStats);
     connect(listenLogic, &ListenLogic::memoryEventReceived, this, &MainWindow::onMemoryEventReceived);
+    connect(listenLogic, &ListenLogic::fileAllocationSummaryUpdated, this, &MainWindow::updateFileAllocationSummary);
     memoryEventsHistory.clear();
     // INICIALIZAR PUNTEROS DE GRÁFICOS
     timelineChart = nullptr;
@@ -407,39 +393,6 @@ void MainWindow::setupMemoryMapTab() // Configura la pestaña de mapa de memoria
     groupLayout->addWidget(memoryMapTable);
     memoryMapGroup->setLayout(groupLayout);
     memoryMapLayout->addWidget(memoryMapGroup, 0, 0);
-}
-// Actualiza las métricas generales en la pestaña de vista general
-void MainWindow::setupAllocationByFileTab()
-{ // Configura la pestaña de asignación por archivo
-    allocationByFileTab = new QWidget();
-    allocationByFileLayout = new QGridLayout(allocationByFileTab);
-    // Gráfico de asignaciones por archivo
-    QGroupBox *chartGroup = new QGroupBox("Asignación de Memoria por Archivo");
-    QVBoxLayout *chartLayout = new QVBoxLayout();               // layout vertical para el gráfico
-    allocationChartView = new QChartView();                     // vista del gráfico
-    allocationChartView->setRenderHint(QPainter::Antialiasing); // mejora la calidad del renderizado
-    chartLayout->addWidget(allocationChartView);                //  añade la vista del gráfico al layout
-    chartGroup->setLayout(chartLayout);                         // establece el layout del grupo
-    // Tabla detallada
-    QGroupBox *tableGroup = new QGroupBox("Detalles por Archivo");
-    QVBoxLayout *tableLayout = new QVBoxLayout();                                            // layout vertical para la tabla
-    allocationTable = new QTableWidget();                                                    // tabla para mostrar detalles de asignación por archivo
-    allocationTable->setColumnCount(3);                                                      // 3 columnas: archivo, asignaciones, memoria
-    allocationTable->setHorizontalHeaderLabels({"Archivo", "Asignaciones", "Memoria (MB)"}); // establece los encabezados de las columnas
-    allocationTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);         // ajusta el tamaño de las columnas para que llenen el espacio disponible
-    allocationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);                     // deshabilita la edición directa de las celdas
-    allocationTable->setRowCount(0);                                                         // inicia con 0 filas
-    // añade la tabla al layout del grupo
-    tableLayout->addWidget(allocationTable); // añade la tabla al layout del grupo
-    tableGroup->setLayout(tableLayout);      // establece el layout del grupo
-
-    // Organizar en splitter para redimensionamiento
-    QSplitter *splitter = new QSplitter(Qt::Vertical);
-    splitter->addWidget(chartGroup); // añade el grupo del gráfico al splitter
-    splitter->addWidget(tableGroup); // añade el grupo de la tabla al splitter
-    splitter->setSizes({400, 200});  //  establece tamaños iniciales para las dos secciones del splitter
-    // Añadir al layout principal
-    allocationByFileLayout->addWidget(splitter, 0, 0);
 }
 // Actualiza las métricas generales en la pestaña de vista general
 void MainWindow::setupMemoryLeaksTab()
@@ -823,11 +776,263 @@ void MainWindow::colorTableRow(int row, const QString &eventType)
     for (int col = 0; col < memoryMapTable->columnCount(); ++col)
     {
         QTableWidgetItem *item = memoryMapTable->item(row, col);
-        if (!item) {
+        if (!item)
+        {
             item = new QTableWidgetItem();
             memoryMapTable->setItem(row, col, item);
         }
         item->setBackground(rowColor);
         item->setForeground(textColor);
     }
+}
+void MainWindow::updateFileAllocationSummary(const QVector<FileAllocationSummary> &fileAllocs)
+{
+    qDebug() << "🔄 Actualizando asignación por archivo - Archivos:" << fileAllocs.size();
+
+    // Limpiar datos anteriores
+    allocationPieSeries->clear();
+    allocationBarSeries->clear();
+    allocationTable->setRowCount(0);
+
+    if (fileAllocs.isEmpty())
+    {
+        // Mostrar estado vacío
+        allocationChart->setTitle("Distribución de Memoria por Archivo - Sin datos");
+        allocationBarChart->setTitle("Asignaciones por Archivo - Sin datos");
+        return;
+    }
+
+    // Ordenar por memoria total (descendente)
+    QVector<FileAllocationSummary> sortedAllocs = fileAllocs;
+    std::sort(sortedAllocs.begin(), sortedAllocs.end(),
+              [](const FileAllocationSummary &a, const FileAllocationSummary &b)
+              {
+                  return a.memoryMB > b.memoryMB;
+              });
+
+    // Limitar a máximo de archivos para mejor visualización
+    int displayCount = qMin(sortedAllocs.size(), MAX_ALLOCATION_FILES);
+
+    // Preparar datos para gráficos
+    QBarSet *barSet = new QBarSet("Memoria (MB)");
+    QStringList categories;
+    double otherMemory = 0.0;
+    int otherAllocations = 0;
+    quint64 otherLeaks = 0;
+    double otherLeakedMemory = 0.0;
+
+    // Procesar archivos para mostrar
+    for (int i = 0; i < sortedAllocs.size(); ++i)
+    {
+        const FileAllocationSummary &alloc = sortedAllocs[i];
+
+        if (i < displayCount)
+        {
+            // Agregar al gráfico de pastel
+            QPieSlice *slice = allocationPieSeries->append(alloc.filename, alloc.memoryMB);
+            slice->setLabel(QString("%1\n%2 MB").arg(alloc.filename).arg(alloc.memoryMB, 0, 'f', 1));
+
+            // Agregar al gráfico de barras
+            *barSet << alloc.memoryMB;
+            categories << (alloc.filename.length() > 15 ? alloc.filename.left(12) + "..." : alloc.filename);
+
+            // Agregar a la tabla
+            int row = allocationTable->rowCount();
+            allocationTable->insertRow(row);
+
+            allocationTable->setItem(row, 0, new QTableWidgetItem(alloc.filename));
+            allocationTable->setItem(row, 1, new QTableWidgetItem(QString::number(alloc.allocationCount)));
+            allocationTable->setItem(row, 2, new QTableWidgetItem(QString::number(alloc.memoryMB, 'f', 2)));
+            allocationTable->setItem(row, 3, new QTableWidgetItem(QString::number(alloc.leakCount)));
+            allocationTable->setItem(row, 4, new QTableWidgetItem(QString::number(alloc.leakedMemoryMB, 'f', 2)));
+
+            // Colorear filas con leaks
+            if (alloc.leakCount > 0)
+            {
+                for (int col = 0; col < allocationTable->columnCount(); ++col)
+                {
+                    QTableWidgetItem *item = allocationTable->item(row, col);
+                    if (item)
+                    {
+                        item->setBackground(QColor(255, 230, 230)); // Rojo claro para leaks
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Agrupar el resto como "Otros"
+            otherMemory += alloc.memoryMB;
+            otherAllocations += alloc.allocationCount;
+            otherLeaks += alloc.leakCount;
+            otherLeakedMemory += alloc.leakedMemoryMB;
+        }
+    }
+
+    // Agregar "Otros" si es necesario
+    if (otherMemory > 0)
+    {
+        QPieSlice *otherSlice = allocationPieSeries->append("Otros archivos", otherMemory);
+        otherSlice->setLabel(QString("Otros archivos\n%1 MB").arg(otherMemory, 0, 'f', 1));
+
+        // Agregar "Otros" a la tabla
+        int row = allocationTable->rowCount();
+        allocationTable->insertRow(row);
+        allocationTable->setItem(row, 0, new QTableWidgetItem("Otros archivos"));
+        allocationTable->setItem(row, 1, new QTableWidgetItem(QString::number(otherAllocations)));
+        allocationTable->setItem(row, 2, new QTableWidgetItem(QString::number(otherMemory, 'f', 2)));
+        allocationTable->setItem(row, 3, new QTableWidgetItem(QString::number(otherLeaks)));
+        allocationTable->setItem(row, 4, new QTableWidgetItem(QString::number(otherLeakedMemory, 'f', 2)));
+    }
+
+    // Configurar gráfico de barras
+    if (!barSet->count() && sortedAllocs.size() > 0)
+    {
+        // Si no se agregaron barras pero hay datos, agregar una barra para el primer elemento
+        const FileAllocationSummary &alloc = sortedAllocs[0];
+        *barSet << alloc.memoryMB;
+        categories << (alloc.filename.length() > 15 ? alloc.filename.left(12) + "..." : alloc.filename);
+    }
+
+    if (barSet->count() > 0)
+    {
+        allocationBarSeries->append(barSet);
+
+        QBarCategoryAxis *axisX = qobject_cast<QBarCategoryAxis *>(allocationBarChart->axes(Qt::Horizontal).first());
+        if (axisX)
+        {
+            axisX->clear();
+            axisX->append(categories);
+        }
+
+        // Auto-ajustar eje Y
+        QValueAxis *axisY = qobject_cast<QValueAxis *>(allocationBarChart->axes(Qt::Vertical).first());
+        if (axisY)
+        {
+            double maxValue = 0;
+            for (int i = 0; i < barSet->count(); ++i)
+            {
+                if (barSet->at(i) > maxValue)
+                    maxValue = barSet->at(i);
+            }
+            axisY->setRange(0, maxValue * 1.1); // 10% de margen
+        }
+    }
+
+    // Actualizar títulos
+    double totalMemory = 0;
+    quint64 totalAllocations = 0;
+    quint64 totalLeaks = 0;
+
+    for (const FileAllocationSummary &alloc : sortedAllocs)
+    {
+        totalMemory += alloc.memoryMB;
+        totalAllocations += alloc.allocationCount;
+        totalLeaks += alloc.leakCount;
+    }
+
+    allocationChart->setTitle(QString("Distribución de Memoria por Archivo\nTotal: %1 MB, %2 asignaciones, %3 leaks")
+                                  .arg(totalMemory, 0, 'f', 1)
+                                  .arg(totalAllocations)
+                                  .arg(totalLeaks));
+
+    allocationBarChart->setTitle(QString("Memoria por Archivo (MB)\nTotal: %1 MB en %2 archivos")
+                                     .arg(totalMemory, 0, 'f', 1)
+                                     .arg(sortedAllocs.size()));
+
+    qDebug() << "✅ Asignación por archivo actualizada - Mostrando" << displayCount << "archivos de" << sortedAllocs.size();
+}
+void MainWindow::setupAllocationByFileTab()
+{
+    allocationByFileTab = new QWidget();
+    allocationByFileLayout = new QGridLayout(allocationByFileTab);
+
+    // Crear splitter principal
+    allocationSplitter = new QSplitter(Qt::Vertical);
+
+    // ==================== GRÁFICO SUPERIOR ====================
+    QGroupBox *chartGroup = new QGroupBox("Distribución de Memoria por Archivo");
+    QVBoxLayout *chartLayout = new QVBoxLayout();
+
+    // Gráfico de pastel
+    allocationPieSeries = new QPieSeries();
+    allocationPieSeries->setHoleSize(0.35);
+    allocationPieSeries->setPieSize(0.8);
+
+    allocationChart = new QChart();
+    allocationChart->addSeries(allocationPieSeries);
+    allocationChart->setTitle("Distribución de Memoria por Archivo");
+    allocationChart->setAnimationOptions(QChart::AllAnimations);
+    allocationChart->legend()->setAlignment(Qt::AlignRight);
+    allocationChart->legend()->setFont(QFont("Arial", 9));
+
+    allocationChartView = new QChartView(allocationChart);
+    allocationChartView->setRenderHint(QPainter::Antialiasing);
+    allocationChartView->setMinimumHeight(300);
+
+    chartLayout->addWidget(allocationChartView);
+    chartGroup->setLayout(chartLayout);
+
+    // ==================== GRÁFICO DE BARRAS ====================
+    QGroupBox *barChartGroup = new QGroupBox("Asignaciones por Archivo (Barras)");
+    QVBoxLayout *barChartLayout = new QVBoxLayout();
+
+    allocationBarSeries = new QBarSeries();
+    allocationBarSeries->setLabelsVisible(true);
+    allocationBarSeries->setLabelsFormat("@valuePtr MB");
+    allocationBarSeries->setLabelsPosition(QAbstractBarSeries::LabelsOutsideEnd);
+
+    allocationBarChart = new QChart();
+    allocationBarChart->addSeries(allocationBarSeries);
+    allocationBarChart->setTitle("Memoria por Archivo (MB)");
+    allocationBarChart->setAnimationOptions(QChart::AllAnimations);
+    allocationBarChart->legend()->setVisible(false);
+
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    allocationBarChart->addAxis(axisX, Qt::AlignBottom);
+    allocationBarSeries->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Memoria (MB)");
+    axisY->setLabelFormat("%.1f");
+    allocationBarChart->addAxis(axisY, Qt::AlignLeft);
+    allocationBarSeries->attachAxis(axisY);
+
+    QChartView *barChartView = new QChartView(allocationBarChart);
+    barChartView->setRenderHint(QPainter::Antialiasing);
+    barChartView->setMinimumHeight(250);
+
+    barChartLayout->addWidget(barChartView);
+    barChartGroup->setLayout(barChartLayout);
+
+    // ==================== TABLA INFERIOR ====================
+    QGroupBox *tableGroup = new QGroupBox("Detalles por Archivo");
+    QVBoxLayout *tableLayout = new QVBoxLayout();
+
+    allocationTable = new QTableWidget();
+    allocationTable->setColumnCount(5);
+    allocationTable->setHorizontalHeaderLabels({"Archivo", "Asignaciones", "Memoria Total (MB)", "Leaks", "Memoria Leakeada (MB)"});
+    allocationTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    allocationTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    allocationTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    allocationTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    allocationTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    allocationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    allocationTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    allocationTable->setAlternatingRowColors(true);
+    allocationTable->setSortingEnabled(true);
+
+    tableLayout->addWidget(allocationTable);
+    tableGroup->setLayout(tableLayout);
+
+    // Organizar en splitter
+    allocationSplitter->addWidget(chartGroup);
+    allocationSplitter->addWidget(barChartGroup);
+    allocationSplitter->addWidget(tableGroup);
+    allocationSplitter->setSizes({350, 300, 400});
+
+    allocationByFileLayout->addWidget(allocationSplitter, 0, 0);
+
+    // Estado inicial
+    updateFileAllocationSummary(QVector<FileAllocationSummary>());
 }
