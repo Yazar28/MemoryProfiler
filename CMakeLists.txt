@@ -9,15 +9,13 @@ if(MSVC)
   add_compile_options(/W4 /EHsc /MP /Zc:__cplusplus)
 endif()
 
-# Activa/desactiva logs del tracker: cmake -DMT_DEBUG=ON ..
 option(MT_DEBUG "Enable MemoryTracker debug logs" OFF)
 
-# Salidas organizadas
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Qt para la GUI (ok dejarlo aquí si ya lo tenías)
+# Qt para la GUI
 set(Qt6_DIR "C:/Qt/6.9.2/msvc2022_64/lib/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 

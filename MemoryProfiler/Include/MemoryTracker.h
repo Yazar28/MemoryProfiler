@@ -72,6 +72,7 @@ public:
     void sendFileAllocations();
     void sendLeakReport();
     void sendTimelinePoint();
+    void sendTopFiles(size_t topN = 8);
 
     // --- Cctor/Dtor ---
     ~MemoryTracker();
