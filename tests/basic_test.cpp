@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     // ====== SimulaciÃ³n externa (sin tocar la librerÃ­a) ======
     SimRun cfg;
     cfg.intervalMs     = 1000;  // sube/baja para ver la fluidez
-    cfg.bigEveryNTicks = 4;    // 1 = manda todo en cada tick
+    cfg.bigEveryNTicks = 2;    // 1 = manda todo en cada tick
 
     // Estado de simulaciÃ³n para timeline
     double currentMemory = 100.0;

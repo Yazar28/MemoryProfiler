@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     struct SimRun { int intervalMs; int bigEveryNTicks; };
     SimRun cfg;
     cfg.intervalMs     = 1000;  // sube/baja para ver la fluidez
-    cfg.bigEveryNTicks = 4;
+    cfg.bigEveryNTicks = 2;
 
     // --- Conexión al GUI ---
     Client c;
